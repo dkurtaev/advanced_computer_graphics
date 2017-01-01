@@ -13,6 +13,7 @@ class Sphere {
 
  private:
   Triangle* tris_[8];
+  unsigned shader_program_;
 };
 
 #endif  // INCLUDE_SPHERE_HPP_

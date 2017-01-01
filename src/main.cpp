@@ -57,12 +57,5 @@ void display() {
     glVertex3f(0.0f, 0.0f, 100.0f);
   glEnd();
 
-  // glColor3ub(0xCA, 0xFF, 0xEE);
-  // glBegin(GL_TRIANGLES);
-  //   glVertex2f(0.0f, 0.5f);
-  //   glVertex2f(-0.5f, -0.5f);
-  //   glVertex2f(0.5f, -0.5f);
-  // glEnd();
-
   glutSwapBuffers();
 }
