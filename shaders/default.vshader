@@ -3,6 +3,8 @@ uniform vec3 u_corners_normals[3];
 
 attribute vec2 a_bary_coeffs;
 
+varying vec3 v_normal;
+
 void main() {
   vec3 p1 = u_corners_coords[0];
   vec3 p2 = u_corners_coords[1];
@@ -32,10 +34,10 @@ void main() {
            b102 * 3.0 * w * v * v +
            b012 * 3.0 * u * v * v +
            b111 * 6.0 * w * u * v;
-  vec3 n = normalize(n1 * w * w + n2 * u * u + n3 * v * v +
-                     normalize(0.5 * (n1 + n2)) * w * u +
-                     normalize(0.5 * (n2 + n3)) * u * v +
-                     normalize(0.5 * (n3 + n1)) * w * v);
+  v_normal = normalize(n1 * w * w + n2 * u * u + n3 * v * v +
+                       normalize(0.5 * (n1 + n2)) * w * u +
+                       normalize(0.5 * (n2 + n3)) * u * v +
+                       normalize(0.5 * (n3 + n1)) * w * v);
 
   gl_Position = gl_ModelViewProjectionMatrix * vec4(b, 1.0);
 }

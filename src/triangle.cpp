@@ -86,11 +86,6 @@ Triangle::Triangle(const Vertex& p1, const Vertex& p2, const Vertex& p3,
   p1.getNormal(base_normals_);
   p2.getNormal(base_normals_ + 3);
   p3.getNormal(base_normals_ + 6);
-
-  for (int i = 0; i < 9; ++i) {
-    std::cout << base_coords_[i] << ' ';
-  }
-  std::cout << std::endl;
 }
 
 Triangle::~Triangle() {
