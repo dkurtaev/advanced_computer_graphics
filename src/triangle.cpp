@@ -2,8 +2,9 @@
 
 #include <iostream>
 
-Triangle::Triangle(const Vertex& v1, const Vertex& v2, const Vertex& v3)
-    : v1_(v1), v2_(v2), v3_(v3) {}
+Triangle::Triangle(const Vertex& v1, const Vertex& v2, const Vertex& v3,
+                   const Point3f& color)
+    : v1_(v1), v2_(v2), v3_(v3), color_(color) {}
 
 bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray) {
   // Let a = p1 - start_point
@@ -31,4 +32,12 @@ bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray) {
 
   float bary_c = Point3f::Det(a, b, ray) / denominator;
   return 0.0f <= bary_c && bary_c <= 1.0f;
+}
+
+void Triangle::GetColor(uint8_t* r, uint8_t* g, uint8_t* b) {
+  float rgb[3];
+  color_.GetCoords(rgb);
+  *r = 255 * rgb[0];
+  *g = 255 * rgb[1];
+  *b = 255 * rgb[2];
 }

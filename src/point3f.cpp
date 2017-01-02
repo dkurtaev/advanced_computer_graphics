@@ -49,3 +49,9 @@ float Point3f::Det(const Point3f& p1, const Point3f& p2, const Point3f& p3) {
          p3.coords_[0] * (p1.coords_[1] * p2.coords_[2] -
                           p1.coords_[2] * p2.coords_[1]);
 }
+
+void Point3f::GetCoords(float* dst) {
+  dst[0] = coords_[0];
+  dst[1] = coords_[1];
+  dst[2] = coords_[2];
+}

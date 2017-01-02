@@ -16,6 +16,8 @@ class Point3f {
 
   Point3f operator +(const Point3f& p) const;
 
+  void GetCoords(float* dst);
+
  private:
   inline void Init(float x, float y, float z, bool normed);
 
