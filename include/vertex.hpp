@@ -22,8 +22,4 @@ class Vertex {
   Point3f normal_;
 };
 
-Point3f operator +(const Point3f& p, const Vertex& v);
-
-Point3f operator -(const Point3f& p, const Vertex& v);
-
 #endif  // INCLUDE_VERTEX_HPP_

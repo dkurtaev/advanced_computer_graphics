@@ -11,7 +11,8 @@ class Triangle {
   Triangle(const Vertex& v1, const Vertex& v2, const Vertex& v3,
            const Point3f& color);
 
-  bool IsIntersects(const Point3f& start_point, const Point3f& ray);
+  bool IsIntersects(const Point3f& start_point, const Point3f& ray,
+                    Point3f* intersection);
 
   void GetColor(uint8_t* r, uint8_t* g, uint8_t* b);
 

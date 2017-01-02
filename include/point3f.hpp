@@ -18,6 +18,12 @@ class Point3f {
 
   void GetCoords(float* dst);
 
+  Point3f& operator =(const Point3f& p);
+
+  Point3f operator *(float val);
+
+  float SqDistanceTo(const Point3f& p) const;
+
  private:
   inline void Init(float x, float y, float z, bool normed);
 

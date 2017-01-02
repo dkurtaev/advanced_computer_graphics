@@ -22,16 +22,3 @@ Point3f Vertex::operator -(const Point3f& p) const {
 Point3f Vertex::GetPos() const {
   return pos_;
 }
-
-Point3f operator +(const Point3f& p, const Vertex& v) {
-  return p + v.GetPos();
-}
-
-Point3f operator -(const Point3f& p, const Vertex& v) {
-  return p - v.GetPos();
-}
-
-
-
-// Vertex::Vertex(const Vertex& v)
-//   : pos_(v.pos_), normal_(v.normal_) {}

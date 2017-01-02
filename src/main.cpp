@@ -1,3 +1,5 @@
+#include <float.h>
+
 #include <iostream>
 #include <vector>
 
@@ -11,6 +13,9 @@ void display();
 
 unsigned display_width = 500;
 unsigned display_height = 500;
+
+Triangle* FindIntersection(const std::vector<Triangle*>& tris,
+                           const Point3f& ray_point, const Point3f& ray_dir);
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
@@ -66,21 +71,14 @@ void display() {
 
   uint8_t* canvas = new uint8_t[3 * display_width * display_height];
   uint8_t* offset = canvas;
-  const unsigned n_tris = tris.size();
+
   for (int y = 0; y < display_height; ++y) {
     float v = (float(y) / display_height) * 2.0f - 1.0f;
     for (int x = 0; x < display_width; ++x) {
       float u = (float(x) / display_width) * 2.0f - 1.0f;
       Point3f ray(u, v, -5, true);
 
-      Triangle* tri = 0;
-      for (int i = 0; i < n_tris; ++i) {
-        if (tris[i]->IsIntersects(camera_pos, ray)) {
-          tri = tris[i];
-          break;
-        }
-      }
-
+      Triangle* tri = FindIntersection(tris, camera_pos, ray);
       if (tri) {
         tri->GetColor(offset, offset + 1, offset + 2);
       } else {
@@ -93,4 +91,23 @@ void display() {
   }
   glDrawPixels(display_width, display_height, GL_RGB, GL_UNSIGNED_BYTE, canvas);
   glutSwapBuffers();
+}
+
+Triangle* FindIntersection(const std::vector<Triangle*>& tris,
+                           const Point3f& ray_point, const Point3f& ray_dir) {
+  Triangle* nearest_tri = 0;
+  float nearest_distance = FLT_MAX;
+  Point3f intersection(0, 0, 0);
+  const unsigned n_tris = tris.size();
+
+  for (int i = 0; i < n_tris; ++i) {
+    if (tris[i]->IsIntersects(ray_point, ray_dir, &intersection)) {
+      float distance = ray_point.SqDistanceTo(intersection);
+      if (distance < nearest_distance) {
+        nearest_tri = tris[i];
+      }
+    }
+  }
+
+  return nearest_tri;
 }

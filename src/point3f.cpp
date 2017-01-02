@@ -55,3 +55,21 @@ void Point3f::GetCoords(float* dst) {
   dst[1] = coords_[1];
   dst[2] = coords_[2];
 }
+
+Point3f& Point3f::operator =(const Point3f& p) {
+  coords_[0] = p.coords_[0];
+  coords_[1] = p.coords_[1];
+  coords_[2] = p.coords_[2];
+  return *this;
+}
+
+Point3f Point3f::operator *(float val) {
+  return Point3f(coords_[0] * val, coords_[1] * val, coords_[2] * val);
+}
+
+float Point3f::SqDistanceTo(const Point3f& p) const {
+  float dx = coords_[0] - p.coords_[0];
+  float dy = coords_[1] - p.coords_[1];
+  float dz = coords_[2] - p.coords_[2];
+  return dx * dx + dy * dy + dz * dz;
+}
