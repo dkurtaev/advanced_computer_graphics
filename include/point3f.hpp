@@ -1,6 +1,8 @@
 #ifndef INCLUDE_POINT3F_HPP_
 #define INCLUDE_POINT3F_HPP_
 
+#include <iostream>
+
 class Point3f {
  public:
   Point3f(float x, float y, float z, bool normed = false);
@@ -16,11 +18,15 @@ class Point3f {
 
   Point3f operator +(const Point3f& p) const;
 
-  void GetCoords(float* dst);
+  void GetCoords(float* dst) const;
 
   Point3f& operator =(const Point3f& p);
 
   Point3f operator *(float val);
+
+  void print() {
+    std::cout << coords_[0] << ' ' << coords_[1] << ' ' << coords_[2] << std::endl;
+  }
 
   float SqDistanceTo(const Point3f& p) const;
 

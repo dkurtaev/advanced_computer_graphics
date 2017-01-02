@@ -12,11 +12,13 @@ class Triangle {
            const Point3f& color);
 
   bool IsIntersects(const Point3f& start_point, const Point3f& ray,
-                    Point3f* intersection);
+                    Point3f* intersection) const;
 
-  void GetColor(uint8_t* r, uint8_t* g, uint8_t* b);
+  void GetColor(uint8_t* r, uint8_t* g, uint8_t* b) const;
 
  private:
+  Point3f Project(const Point3f& point, const Point3f& dir) const;
+
   Vertex v1_, v2_, v3_;
   Point3f color_;
 };
