@@ -8,6 +8,7 @@
 #include "include/point3f.hpp"
 #include "include/vertex.hpp"
 #include "include/triangle.hpp"
+#include "include/cornell_box.hpp"
 
 void display();
 
@@ -37,46 +38,19 @@ int main(int argc, char** argv) {
 void display() {
   glClear(GL_COLOR_BUFFER_BIT);
 
-  static const float kCornellBoxSize = 1.0f;
-  static const float kCornellBoxZ = -2.0;
-  static const float kCornellBoxFront = kCornellBoxZ + 2 * kCornellBoxSize;
+  Point3f p2(-1, 1, -2);
+  Point3f p4(1, -1, -2);
+  Point3f p5(-1, -1, 0);
+  Vertex v1(p5 * 0.6f + p4 * 0.2f + p2 * 0.2f, Point3f(0, 0, 1));
+  Vertex v2(p5 * 0.1f + p4 * 0.8f + p2 * 0.1f, Point3f(0, 0, 1));
+  Vertex v3(p5 * 0.2f + p4 * 0.3f + p2 * 0.5f, Point3f(0, 0, 1));
 
-  Vertex v1(Point3f(-kCornellBoxSize, -kCornellBoxSize, kCornellBoxZ),
-            Point3f(0, 0, 1));
-  Vertex v2(Point3f(-kCornellBoxSize, kCornellBoxSize, kCornellBoxZ),
-            Point3f(0, 0, 1));
-  Vertex v3(Point3f(kCornellBoxSize, kCornellBoxSize, kCornellBoxZ),
-            Point3f(0, 0, 1));
-  Vertex v4(Point3f(kCornellBoxSize, -kCornellBoxSize, kCornellBoxZ),
-            Point3f(0, 0, 1));
-  Vertex v5(Point3f(-kCornellBoxSize, -kCornellBoxSize, kCornellBoxFront),
-            Point3f(0, 0, 1));
-  Vertex v6(Point3f(-kCornellBoxSize, kCornellBoxSize, kCornellBoxFront),
-            Point3f(0, 0, 1));
-  Vertex v7(Point3f(kCornellBoxSize, kCornellBoxSize, kCornellBoxFront),
-            Point3f(0, 0, 1));
-  Vertex v8(Point3f(kCornellBoxSize, -kCornellBoxSize, kCornellBoxFront),
-            Point3f(0, 0, 1));
-
-  Vertex v9(v5.GetPos() * 0.6f + v4.GetPos() * 0.2f + v2.GetPos() * 0.2f, Point3f(0, 0, 1));
-  Vertex v10(v5.GetPos() * 0.1f + v4.GetPos() * 0.8f + v2.GetPos() * 0.1f, Point3f(0, 0, 1));
-  Vertex v11(v5.GetPos() * 0.2f + v4.GetPos() * 0.3f + v2.GetPos() * 0.5f, Point3f(0, 0, 1));
-
-  std::vector<Triangle*> tris(11);
-  tris[0] = new Triangle(v1, v3, v2, Point3f(1, 1, 1));
-  tris[1] = new Triangle(v1, v4, v3, Point3f(1, 1, 1));
-  tris[2] = new Triangle(v5, v2, v6, Point3f(1, 0, 0));
-  tris[3] = new Triangle(v5, v1, v2, Point3f(1, 0, 0));
-  tris[4] = new Triangle(v4, v7, v3, Point3f(0, 1, 0));
-  tris[5] = new Triangle(v4, v8, v7, Point3f(0, 1, 0));
-  tris[6] = new Triangle(v6, v2, v3, Point3f(0, 1, 1));
-  tris[7] = new Triangle(v6, v3, v7, Point3f(0, 1, 1));
-  tris[8] = new Triangle(v5, v4, v1, Point3f(0, 1, 1));
-  tris[9] = new Triangle(v5, v8, v4, Point3f(0, 1, 1));
-  tris[10] = new Triangle(v9,v10,v11, Point3f(1, 0.5, 0));
+  std::vector<Triangle*> tris;
+  CornellBox::GetTriangles(&tris);
+  tris.push_back(new Triangle(v1, v2, v3, Point3f(1, 0.5, 0)));
 
   Point3f camera_pos(0, 0, 5);
-  Point3f light_src(0, kCornellBoxSize - 0.01, kCornellBoxSize + kCornellBoxZ);
+  Point3f light_src = CornellBox::GetLightSrc();
   Point3f intersection(0, 0, 0);
 
   uint8_t* canvas = new uint8_t[3 * display_width * display_height];
