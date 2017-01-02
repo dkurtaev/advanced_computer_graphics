@@ -1,4 +1,5 @@
 #include <float.h>
+#include <math.h>
 
 #include <iostream>
 #include <vector>
@@ -21,6 +22,12 @@ Triangle* FindIntersection(const std::vector<Triangle*>& tris,
                            Point3f* intersection,
                            const Triangle* excluded_tri = 0,
                            float max_distance = FLT_MAX);
+
+// Returns color.
+const int kMaxIters = 1;
+Point3f Ray(const Point3f& from, const Point3f& dir,
+            const std::vector<Triangle*>& tris,
+            int iter = 0);
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
@@ -52,37 +59,22 @@ void display() {
   tris.push_back(new Triangle(v1, v2, v3, Point3f(1, 0.5, 0)));
 
   Point3f camera_pos(0, 0, 5);
-  Point3f light_src = CornellBox::GetLightSrc();
-  Point3f intersection(0, 0, 0);
 
   uint8_t* canvas = new uint8_t[3 * display_width * display_height];
   uint8_t* offset = canvas;
 
+  float rgb[3];
   for (int y = 0; y < display_height; ++y) {
     float v = (float(y) / display_height) * 2.0f - 1.0f;
     for (int x = 0; x < display_width; ++x) {
       float u = (float(x) / display_width) * 2.0f - 1.0f;
-      Point3f ray(Point3f(u, v, 0) - camera_pos, true);
-
-      Triangle* tri = FindIntersection(tris, camera_pos, ray, &intersection);
-      if (tri) {
-        Point3f light_vec(light_src - intersection, true);
-        Triangle* light_tri = FindIntersection(tris, Point3f(intersection),
-                                               light_vec,
-                                               &intersection, tri,
-                                               intersection.SqDistanceTo(light_src));
-        if (!light_tri) {
-          tri->GetColor(offset, offset + 1, offset + 2);
-        } else {
-          offset[0] = 0;
-          offset[1] = 0;
-          offset[2] = 0;
-        }
-      } else {
-        offset[0] = 0;
-        offset[1] = 0;
-        offset[2] = 0;
-      }
+      Point3f color = Ray(camera_pos,
+                          Point3f(Point3f(u, v, 0) - camera_pos, true),
+                          tris);
+      color.GetCoords(rgb);
+      offset[0] = 255 * std::min(1.0f, rgb[0]);
+      offset[1] = 255 * std::min(1.0f, rgb[1]);
+      offset[2] = 255 * std::min(1.0f, rgb[2]);
       offset += 3;
     }
   }
@@ -116,4 +108,30 @@ Triangle* FindIntersection(const std::vector<Triangle*>& tris,
   }
   *intersection = nearest_tri_intersection;
   return nearest_tri;
+}
+
+Point3f Ray(const Point3f& from, const Point3f& dir,
+            const std::vector<Triangle*>& tris,
+            int iter) {
+  Point3f light_src = CornellBox::GetLightSrc();
+  Point3f intersection(0, 0, 0);
+  Point3f result_color(0, 0, 0);
+
+  Triangle* tri = FindIntersection(tris, from, dir, &intersection);
+  if (tri) {
+    Color tri_color = tri->GetColor();
+    result_color = result_color + tri_color.color * tri_color.ambient;
+
+    Point3f light_vec(light_src - intersection, true);
+    Triangle* light_tri = FindIntersection(tris, Point3f(intersection),
+                                           light_vec,
+                                           &intersection, tri,
+                                           intersection.SqDistanceTo(light_src));
+    if (!light_tri) {
+      result_color = result_color + tri_color.color * tri_color.diffuse;
+    }
+  } else {
+    return Point3f(0, 0, 0);
+  }
+  return result_color;
 }

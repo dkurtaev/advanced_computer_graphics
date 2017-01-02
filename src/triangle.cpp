@@ -4,7 +4,7 @@
 #include <math.h>
 
 Triangle::Triangle(const Vertex& v1, const Vertex& v2, const Vertex& v3,
-                   const Point3f& color)
+                   const Color& color)
     : v1_(v1), v2_(v2), v3_(v3), color_(color) {}
 
 bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray,
@@ -30,12 +30,8 @@ bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray,
   return 0.0f <= bary_p3 && bary_p3 <= 1.0f;
 }
 
-void Triangle::GetColor(uint8_t* r, uint8_t* g, uint8_t* b) const {
-  float rgb[3];
-  color_.GetCoords(rgb);
-  *r = 255 * rgb[0];
-  *g = 255 * rgb[1];
-  *b = 255 * rgb[2];
+Color Triangle::GetColor() const {
+  return color_;
 }
 
 Point3f Triangle::Project(const Point3f& point, const Point3f& dir) const {
