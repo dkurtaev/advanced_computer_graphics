@@ -1,19 +1,34 @@
+#include <float.h>
+
+#include <iostream>
+#include <vector>
+
 #include <GL/freeglut.h>
 
-#include "include/sphere.hpp"
+#include "include/point3f.hpp"
+#include "include/vertex.hpp"
+#include "include/triangle.hpp"
+#include "include/cornell_box.hpp"
 
 void display();
+
+unsigned display_width = 500;
+unsigned display_height = 500;
+
+Triangle* FindIntersection(const std::vector<Triangle*>& tris,
+                           const Point3f& ray_point, const Point3f& ray_dir,
+                           Point3f* intersection,
+                           const Triangle* excluded_tri = 0,
+                           float max_distance = FLT_MAX);
 
 int main(int argc, char** argv) {
   glutInit(&argc, argv);
 
-  glutInitWindowSize(500, 500);
+  glutInitWindowSize(display_width, display_height);
   glutInitWindowPosition(0, 0);
   glutCreateWindow("Single view");
 
   glutDisplayFunc(display);
-
-  glEnable(GL_DEPTH_TEST);
 
   glutMainLoop();
 
@@ -21,30 +36,82 @@ int main(int argc, char** argv) {
 }
 
 void display() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT);
 
-  // Setup camera.
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPerspective(20, 1, 0.1, 1000);
-  gluLookAt(5, 5, 5, 0, 0, 0, 0, 0, 1);
+  Point3f p2(-1, 1, -2);
+  Point3f p4(1, -1, -2);
+  Point3f p5(-1, -1, 0);
+  Vertex v1(p5 * 0.6f + p4 * 0.2f + p2 * 0.2f, Point3f(0, 0, 1));
+  Vertex v2(p5 * 0.1f + p4 * 0.8f + p2 * 0.1f, Point3f(0, 0, 1));
+  Vertex v3(p5 * 0.2f + p4 * 0.3f + p2 * 0.5f, Point3f(0, 0, 1));
 
-  Sphere sphere(1);
-  sphere.draw();
+  std::vector<Triangle*> tris;
+  CornellBox::GetTriangles(&tris);
+  tris.push_back(new Triangle(v1, v2, v3, Point3f(1, 0.5, 0)));
 
-  glBegin(GL_LINES);
-    glColor3ub(255, 0, 0);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(100.0f, 0.0f, 0.0f);
+  Point3f camera_pos(0, 0, 5);
+  Point3f light_src = CornellBox::GetLightSrc();
+  Point3f intersection(0, 0, 0);
 
-    glColor3ub(0, 255, 0);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 100.0f, 0.0f);
+  uint8_t* canvas = new uint8_t[3 * display_width * display_height];
+  uint8_t* offset = canvas;
 
-    glColor3ub(0, 0, 255);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 100.0f);
-  glEnd();
+  for (int y = 0; y < display_height; ++y) {
+    float v = (float(y) / display_height) * 2.0f - 1.0f;
+    for (int x = 0; x < display_width; ++x) {
+      float u = (float(x) / display_width) * 2.0f - 1.0f;
+      Point3f ray(Point3f(u, v, 0) - camera_pos, true);
 
+      Triangle* tri = FindIntersection(tris, camera_pos, ray, &intersection);
+      if (tri) {
+        Point3f light_vec(light_src - intersection, true);
+        Triangle* light_tri = FindIntersection(tris, Point3f(intersection),
+                                               light_vec,
+                                               &intersection, tri,
+                                               intersection.SqDistanceTo(light_src));
+        if (!light_tri) {
+          tri->GetColor(offset, offset + 1, offset + 2);
+        } else {
+          offset[0] = 0;
+          offset[1] = 0;
+          offset[2] = 0;
+        }
+      } else {
+        offset[0] = 0;
+        offset[1] = 0;
+        offset[2] = 0;
+      }
+      offset += 3;
+    }
+  }
+  glDrawPixels(display_width, display_height, GL_RGB, GL_UNSIGNED_BYTE, canvas);
   glutSwapBuffers();
+}
+
+Triangle* FindIntersection(const std::vector<Triangle*>& tris,
+                           const Point3f& ray_point, const Point3f& ray_dir,
+                           Point3f* intersection,
+                           const Triangle* excluded_tri,
+                           float max_distance) {
+  Triangle* nearest_tri = 0;
+  float nearest_distance = FLT_MAX;
+  Point3f nearest_tri_intersection(0, 0, 0);
+  const unsigned n_tris = tris.size();
+
+  for (int i = 0; i < n_tris; ++i) {
+    if (tris[i] == excluded_tri) {
+      continue;
+    }
+    bool is_int = false;
+    if (tris[i]->IsIntersects(ray_point, ray_dir, intersection)) {
+      float distance = intersection->SqDistanceTo(ray_point);
+      if (distance < nearest_distance && distance < max_distance) {
+        nearest_tri = tris[i];
+        nearest_distance = distance;
+        nearest_tri_intersection = *intersection;
+      }
+    }
+  }
+  *intersection = nearest_tri_intersection;
+  return nearest_tri;
 }

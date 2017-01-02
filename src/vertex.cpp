@@ -1,22 +1,24 @@
 #include "include/vertex.hpp"
 
-Vertex::Vertex(float x, float y, float z, float nx, float ny, float nz) {
-  coords_[0] = x;
-  coords_[1] = y;
-  coords_[2] = z;
-  normal_[0] = nx;
-  normal_[1] = ny;
-  normal_[2] = nz;
+Vertex::Vertex(const Point3f& pos, const Point3f& normal)
+  : pos_(pos), normal_(normal, true) {}
+
+Point3f Vertex::operator +(const Vertex& v) const {
+  return pos_ + v.pos_;
 }
 
-void Vertex::getCoords(float* dst) const {
-  dst[0] = coords_[0];
-  dst[1] = coords_[1];
-  dst[2] = coords_[2];
+Point3f Vertex::operator -(const Vertex& v) const {
+  return pos_ - v.pos_;
 }
 
-void Vertex::getNormal(float* dst) const {
-  dst[0] = normal_[0];
-  dst[1] = normal_[1];
-  dst[2] = normal_[2];
+Point3f Vertex::operator +(const Point3f& p) const {
+  return pos_ + p;
+}
+
+Point3f Vertex::operator -(const Point3f& p) const {
+  return pos_ - p;
+}
+
+Point3f Vertex::GetPos() const {
+  return pos_;
 }

@@ -1,114 +1,94 @@
 #include "include/triangle.hpp"
 
-#include <stdint.h>
-
 #include <iostream>
+#include <math.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/freeglut.h>
+Triangle::Triangle(const Vertex& v1, const Vertex& v2, const Vertex& v3,
+                   const Point3f& color)
+    : v1_(v1), v2_(v2), v3_(v3), color_(color) {}
 
-Triangle::Triangle(const Vertex& p1, const Vertex& p2, const Vertex& p3,
-                   int lod) {
-  // 0 +            . p1
-  //   |           . .
-  //   |          .   .
-  //   |         *--p--*
-  //   |        .       .
-  // 1 +    p2 . . . . . . p3
-  //   |       0         1
-  // U v       +---------+-----> V
-  //
-  // p = V * [U*p2 + (1-U)*p1] + (1-V) * [U*p3 + (1-U)*p1] =
-  //     (1-u)*p1 + u*v*p2 + u*(1-v)*p3
-  //
-  const int num_vertices = (lod + 3) * (lod + 2) / 2;
-  num_triangles_ = (lod + 1) * (lod + 1);
-
-  float* bary_coords = new float[2 * num_vertices];
-  uint16_t* indices = new uint16_t[3 * num_triangles_];
-
-  float u = 0;
-  float du = 1.0 / (lod + 1);
-  float* bary_offset = bary_coords;
-  for (int i = 0; i < lod + 2; ++i, u += du) {
-    float v = 0;
-    float dv = 1.0 / i;
-    for (int j = 0; j <= i; ++j, v += dv) {
-      bary_offset[0] = 1 - u;
-      bary_offset[1] = u * (1 - v);
-      bary_offset += 2;
-    }
+bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray,
+                            Point3f* intersection) const {
+  *intersection = Project(start_point, ray);
+  if (Point3f::Dot(*intersection - start_point, ray) < 0) {
+    return false;
   }
+  // Compute barycentric coordinates,
+  // intersection_point = bary_p1 * p1 + bary_p2 * p2 + bary_p3 * p3
+  Point3f p1 = v1_.GetPos();
+  Point3f p2 = v2_.GetPos();
+  Point3f p3 = v3_.GetPos();
+  float denominator = Point3f::Det(p1, p2, p3);
 
-  uint16_t idx = 1;
-  uint16_t* indices_offset = indices;
-  for (int i = 0; i <= lod; ++i, idx += 2) {
-    for (int j = 0; j < i; ++j, ++idx) {
-      indices_offset[0] = idx;
-      indices_offset[1] = idx + 1;
-      indices_offset[2] = idx - i - 1;
+  float bary_p1 = Point3f::Det(*intersection, p2, p3) / denominator;
+  if (bary_p1 < 0.0f || 1.0f < bary_p1) return false;
 
-      indices_offset[3] = idx + 1;
-      indices_offset[4] = idx - i;
-      indices_offset[5] = idx - i - 1;
-      indices_offset += 6;
-    }
-    indices_offset[0] = idx;
-    indices_offset[1] = idx + 1;
-    indices_offset[2] = idx - i - 1;
-    indices_offset += 3;
-  }
+  float bary_p2 = Point3f::Det(p1, *intersection, p3) / denominator;
+  if (bary_p2 < 0.0f || 1.0f < bary_p2) return false;
 
-  glGenBuffers(1, &bary_coords_vbo_);
-  if (!bary_coords_vbo_) {
-    std::cout << "Failed VBO generation." << std::endl;
-  }
-  glBindBuffer(GL_ARRAY_BUFFER, bary_coords_vbo_);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * num_vertices, bary_coords,
-               GL_STATIC_DRAW);
-  delete[] bary_coords;
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-  glGenBuffers(1, &indices_vbo_);
-  if (!indices_vbo_) {
-    std::cout << "Failed VBO generation." << std::endl;
-  }
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo_);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * 3 * num_triangles_,
-               indices, GL_STATIC_DRAW);
-  delete[] indices;
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-  p1.getCoords(base_coords_);
-  p2.getCoords(base_coords_ + 3);
-  p3.getCoords(base_coords_ + 6);
-  p1.getNormal(base_normals_);
-  p2.getNormal(base_normals_ + 3);
-  p3.getNormal(base_normals_ + 6);
+  float bary_p3 = Point3f::Det(p1, p2, *intersection) / denominator;
+  return 0.0f <= bary_p3 && bary_p3 <= 1.0f;
 }
 
-Triangle::~Triangle() {
-  glDeleteBuffers(1, &bary_coords_vbo_);
-  glDeleteBuffers(1, &indices_vbo_);
+void Triangle::GetColor(uint8_t* r, uint8_t* g, uint8_t* b) const {
+  float rgb[3];
+  color_.GetCoords(rgb);
+  *r = 255 * rgb[0];
+  *g = 255 * rgb[1];
+  *b = 255 * rgb[2];
 }
 
-void Triangle::draw(unsigned program) const {
-  unsigned loc_coords = glGetUniformLocation(program, "u_corners_coords");
-  unsigned loc_normals = glGetUniformLocation(program, "u_corners_normals");
-  unsigned loc_bary = glGetAttribLocation(program, "a_bary_coeffs");
+Point3f Triangle::Project(const Point3f& point, const Point3f& dir) const {
+  Point3f point1 = v1_.GetPos();
+  Point3f point2 = v2_.GetPos();
+  Point3f point3 = v3_.GetPos();
+  float p1[3], p2[3], p3[3], line_point[3], line_dir[3];
+  point1.GetCoords(p1);
+  point2.GetCoords(p2);
+  point3.GetCoords(p3);
+  point.GetCoords(line_point);
+  dir.GetCoords(line_dir);
 
-  glUniform3fv(loc_coords, 3, base_coords_);
-  glUniform3fv(loc_normals, 3, base_normals_);
+  float nx = p1[1] * (p2[2] - p3[2]) +
+             p2[1] * (p3[2] - p1[2]) +
+             p3[1] * (p1[2] - p2[2]);
+  float ny = p1[0] * (p3[2] - p2[2]) +
+             p2[0] * (p1[2] - p3[2]) +
+             p3[0] * (p2[2] - p1[2]);
+  float nz = p1[0] * (p2[1] - p3[1]) +
+             p2[0] * (p3[1] - p1[1]) +
+             p3[0] * (p1[1] - p2[1]);
 
-  glBindBuffer(GL_ARRAY_BUFFER, bary_coords_vbo_);
-  glVertexAttribPointer(loc_bary, 2, GL_FLOAT, false, 0, 0);
-  glEnableVertexAttribArray(loc_bary);
+  if (line_dir[1] != 0) {
+    Point3f right_part(p1[1] * (p3[0] * p2[2] - p2[0] * p3[2]) +
+                       p2[1] * (p1[0] * p3[2] - p3[0] * p1[2]) +
+                       p3[1] * (p2[0] * p1[2] - p1[0] * p2[2]),
+                       line_dir[1] * line_point[0] -
+                       line_dir[0] * line_point[1],
+                       line_dir[2] * line_point[1] -
+                       line_dir[1] * line_point[2]);
+    Point3f a(nx, line_dir[1], 0);
+    Point3f b(ny, -line_dir[0], line_dir[2]);
+    Point3f c(nz, 0, -line_dir[1]);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_vbo_);
-  glDrawElements(GL_TRIANGLES, 3 * num_triangles_, GL_UNSIGNED_SHORT, 0);
+    float denominator = Point3f::Det(a, b, c);
+    return Point3f(Point3f::Det(right_part, b, c) / denominator,
+                   Point3f::Det(a, right_part, c) / denominator,
+                   Point3f::Det(a, b, right_part) / denominator);
+  } else {
+    Point3f right_part(p1[1] * (p3[0] * p2[2] - p2[0] * p3[2]) +
+                       p2[1] * (p1[0] * p3[2] - p3[0] * p1[2]) +
+                       p3[1] * (p2[0] * p1[2] - p1[0] * p2[2]),
+                       line_dir[2] * line_point[0] -
+                       line_dir[0] * line_point[2],
+                       0);
+    Point3f a(nx, line_dir[2], 0);
+    Point3f b(ny, 0, 1);
+    Point3f c(nz, -line_dir[0], 0);
 
-  glDisableVertexAttribArray(loc_bary);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+    float denominator = Point3f::Det(a, b, c);
+    return Point3f(Point3f::Det(right_part, b, c) / denominator,
+                   Point3f::Det(a, right_part, c) / denominator,
+                   Point3f::Det(a, b, right_part) / denominator);
+  }
 }
