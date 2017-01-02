@@ -88,3 +88,8 @@ Point3f Triangle::Project(const Point3f& point, const Point3f& dir) const {
                    Point3f::Det(a, b, right_part) / denominator);
   }
 }
+
+Point3f Triangle::GetNormal() {
+  return Point3f((v1_.GetNormal() + v2_.GetNormal() + v3_.GetNormal()) * 0.33f,
+                 true);
+}

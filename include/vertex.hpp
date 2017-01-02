@@ -17,6 +17,8 @@ class Vertex {
 
   Point3f GetPos() const;
 
+  Point3f GetNormal() const;
+
  private:
   Point3f pos_;
   Point3f normal_;
