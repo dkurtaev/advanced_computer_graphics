@@ -47,7 +47,7 @@ void display() {
 
   std::vector<Triangle*> tris;
   CornellBox::GetTriangles(&tris);
-  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2, 1);
+  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2, 3);
 
   Point3f camera_pos(0, 0, 5);
 
@@ -120,7 +120,7 @@ Point3f Ray(const Point3f& from, const Point3f& dir,
     // Reflected ray.
     if (tri_color.reflection > 0 && iter + 1 < kMaxIters) {
 
-      Point3f reflected(normal * 2.0f * Point3f::Dot(normal, dir) - dir, true);
+      Point3f reflected(dir - normal * 2.0f * Point3f::Dot(normal, dir), true);
       result_color += Ray(Point3f(intersection), reflected, tris, iter + 1) *
                       tri_color.reflection;
     }

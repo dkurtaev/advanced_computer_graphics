@@ -13,23 +13,22 @@ bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray,
   Point3f p2 = v2_.GetPos();
   Point3f p3 = v3_.GetPos();
 
-  Point3f a = ray * -1.0f;
   Point3f b = p1 - p3;
   Point3f c = p2 - p3;
   Point3f right_part = start_point - p3;
 
-  float denominator = Point3f::Det(a, b, c);
+  float denominator = Point3f::Det(ray, b, c);
 
-  *u = Point3f::Det(a, right_part, c) / denominator;
+  *u = Point3f::Det(ray, right_part, c) / denominator;
   if (*u < 0.0f || 1.0f < *u) return false;
 
-  *v = Point3f::Det(a, b, right_part) / denominator;
+  *v = Point3f::Det(ray, b, right_part) / denominator;
   if (*v < 0.0f || 1.0f < *v) return false;
 
   float w = *u + *v;
   if (w <= 1.0f) {
     *intersection = *u * p1 + *v * p2 + (1.0f - w) * p3;
-    return true;
+    return Point3f::Dot(ray, *intersection - start_point) > 0;
   } else {
     return false;
   }
