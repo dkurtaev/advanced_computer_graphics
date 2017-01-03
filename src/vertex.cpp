@@ -22,3 +22,7 @@ Point3f Vertex::operator -(const Point3f& p) const {
 Point3f Vertex::GetPos() const {
   return pos_;
 }
+
+Point3f Vertex::GetNormal() const {
+  return normal_;
+}
