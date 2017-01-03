@@ -11,12 +11,16 @@ class Point3f {
 
   static float Dot(const Point3f& p1, const Point3f& p2);
 
+  static Point3f Cross(const Point3f& p1, const Point3f& p2);
+
   // Determinant of matrix (p1, p2, p3), where each point as column.
   static float Det(const Point3f& p1, const Point3f& p2, const Point3f& p3);
 
   Point3f operator -(const Point3f& p) const;
 
   Point3f operator +(const Point3f& p) const;
+
+  Point3f& operator +=(const Point3f& p);
 
   void GetCoords(float* dst) const;
 

@@ -19,11 +19,11 @@ unsigned display_height = 500;
 
 Triangle* FindIntersection(const std::vector<Triangle*>& tris,
                            const Point3f& ray_point, const Point3f& ray_dir,
-                           Point3f* intersection,
+                           Point3f* intersection, float* u, float* v,
                            float max_distance = FLT_MAX);
 
 // Returns color.
-const int kMaxIters = 3;
+const int kMaxIters = 5;
 Point3f Ray(const Point3f& from, const Point3f& dir,
             const std::vector<Triangle*>& tris,
             int iter = 0);
@@ -45,17 +45,9 @@ int main(int argc, char** argv) {
 void display() {
   glClear(GL_COLOR_BUFFER_BIT);
 
-  Point3f p2(-1, 1, -2);
-  Point3f p4(1, -1, -2);
-  Point3f p5(-1, -1, 0);
-  Vertex v1(p5 * 0.6f + p4 * 0.2f + p2 * 0.2f, Point3f(0, 0, 1));
-  Vertex v2(p5 * 0.1f + p4 * 0.8f + p2 * 0.1f, Point3f(0, 0, 1));
-  Vertex v3(p5 * 0.2f + p4 * 0.3f + p2 * 0.5f, Point3f(0, 0, 1));
-
   std::vector<Triangle*> tris;
   CornellBox::GetTriangles(&tris);
-  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2, 3);
-  tris.push_back(new Triangle(v1, v2, v3, Point3f(1, 0.5, 0)));
+  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2, 1);
 
   Point3f camera_pos(0, 0, 5);
 
@@ -83,27 +75,29 @@ void display() {
 
 Triangle* FindIntersection(const std::vector<Triangle*>& tris,
                            const Point3f& ray_point, const Point3f& ray_dir,
-                           Point3f* intersection,
+                           Point3f* intersection, float* u, float* v,
                            float max_distance) {
   static const float kMinDistance = 1e-2f;
   Triangle* nearest_tri = 0;
   float nearest_distance = FLT_MAX;
-  Point3f nearest_tri_intersection(0, 0, 0);
   const unsigned n_tris = tris.size();
 
+  Point3f tmp_intersection(0, 0, 0);
+  float tmp_u, tmp_v;
   for (int i = 0; i < n_tris; ++i) {
-    bool is_int = false;
-    if (tris[i]->IsIntersects(ray_point, ray_dir, intersection)) {
-      float distance = intersection->SqDistanceTo(ray_point);
+    if (tris[i]->IsIntersects(ray_point, ray_dir, &tmp_intersection,
+                              &tmp_u, &tmp_v)) {
+      float distance = tmp_intersection.SqDistanceTo(ray_point);
       if (distance < nearest_distance &&
           kMinDistance < distance && distance < max_distance) {
         nearest_tri = tris[i];
         nearest_distance = distance;
-        nearest_tri_intersection = *intersection;
+        *intersection = tmp_intersection;
+        *u = tmp_u;
+        *v = tmp_v;
       }
     }
   }
-  *intersection = nearest_tri_intersection;
   return nearest_tri;
 }
 
@@ -114,29 +108,35 @@ Point3f Ray(const Point3f& from, const Point3f& dir,
   Point3f intersection(0, 0, 0);
   Point3f result_color(0, 0, 0);
 
-  Triangle* tri = FindIntersection(tris, from, dir, &intersection);
+  float u, v;
+  Triangle* tri = FindIntersection(tris, from, dir, &intersection, &u, &v);
   if (tri) {
-    Color tri_color = tri->GetColor();
-    result_color = result_color + tri_color.color * tri_color.ambient;
+    Point3f normal = tri->GetNormal(u, v);
 
+    // Ambient color.
+    Color tri_color = tri->GetColor();
+    result_color += tri_color.color * tri_color.ambient;
+
+    // Reflected ray.
+    if (tri_color.reflection > 0 && iter + 1 < kMaxIters) {
+
+      Point3f reflected(normal * 2.0f * Point3f::Dot(normal, dir) - dir, true);
+      result_color += Ray(Point3f(intersection), reflected, tris, iter + 1) *
+                      tri_color.reflection;
+    }
+
+    // Diffuse component.
+    float distance_to_light_src = intersection.SqDistanceTo(light_src);
     Point3f light_vec(light_src - intersection, true);
     Triangle* light_tri = FindIntersection(tris, Point3f(intersection),
                                            light_vec,
-                                           &intersection,
-                                           intersection.SqDistanceTo(light_src));
+                                           &intersection, &u, &v,
+                                           distance_to_light_src);
     if (!light_tri) {
-      result_color = result_color + tri_color.color * tri_color.diffuse;
+      float lum = (Point3f::Dot(normal, light_vec) + 2.0f) * 0.33f;
+      lum *= sqrt(std::max(0.0f, 1.0f - distance_to_light_src / 6.0f));
+      result_color += tri_color.color * tri_color.diffuse * lum;
     }
-
-    if (tri_color.reflection > 0 && iter + 1 < kMaxIters) {
-      Point3f n = tri->GetNormal();
-      Point3f reflected_ray(n * 2.0f * Point3f::Dot(n, dir) - dir, true);
-      result_color = result_color +
-                     Ray(Point3f(intersection), reflected_ray, tris, iter + 1) *
-                     tri_color.reflection;
-    }
-  } else {
-    return Point3f(0, 0, 0);
   }
   return result_color;
 }

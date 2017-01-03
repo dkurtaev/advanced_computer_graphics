@@ -11,9 +11,9 @@ class Triangle {
            const Color& color);
 
   bool IsIntersects(const Point3f& start_point, const Point3f& ray,
-                    Point3f* intersection) const;
+                    Point3f* intersection, float* u, float* v) const;
 
-  Point3f GetNormal();
+  Point3f GetNormal(float u, float v);
 
   Color GetColor() const;
 
