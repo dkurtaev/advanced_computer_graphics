@@ -22,7 +22,7 @@ class Point3f {
 
   Point3f& operator =(const Point3f& p);
 
-  Point3f operator *(float val);
+  Point3f operator *(float val) const;
 
   void print() {
     std::cout << coords_[0] << ' ' << coords_[1] << ' ' << coords_[2] << std::endl;
@@ -35,5 +35,7 @@ class Point3f {
 
   float coords_[3];
 };
+
+Point3f operator *(float val, const Point3f& p);
 
 #endif  // INCLUDE_POINT3F_HPP_

@@ -54,7 +54,7 @@ void display() {
 
   std::vector<Triangle*> tris;
   CornellBox::GetTriangles(&tris);
-  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2);
+  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2, 3);
   tris.push_back(new Triangle(v1, v2, v3, Point3f(1, 0.5, 0)));
 
   Point3f camera_pos(0, 0, 5);

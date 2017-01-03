@@ -63,7 +63,7 @@ Point3f& Point3f::operator =(const Point3f& p) {
   return *this;
 }
 
-Point3f Point3f::operator *(float val) {
+Point3f Point3f::operator *(float val) const {
   return Point3f(coords_[0] * val, coords_[1] * val, coords_[2] * val);
 }
 
@@ -72,4 +72,8 @@ float Point3f::SqDistanceTo(const Point3f& p) const {
   float dy = coords_[1] - p.coords_[1];
   float dz = coords_[2] - p.coords_[2];
   return dx * dx + dy * dy + dz * dz;
+}
+
+Point3f operator *(float val, const Point3f& p) {
+  return p * val;
 }
