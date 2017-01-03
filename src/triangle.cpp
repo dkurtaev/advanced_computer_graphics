@@ -44,3 +44,9 @@ Point3f Triangle::GetNormal(float u, float v) {
   Point3f n3 = v3_.GetNormal();
   return Point3f(n1 * u + n2 * v + n3 * (1.0f - u - v), true);
 }
+
+void Triangle::Move(const Point3f& delta) {
+  v1_ += delta;
+  v2_ += delta;
+  v3_ += delta;
+}

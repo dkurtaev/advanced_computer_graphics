@@ -26,3 +26,8 @@ Point3f Vertex::GetPos() const {
 Point3f Vertex::GetNormal() const {
   return normal_;
 }
+
+Vertex& Vertex::operator +=(const Point3f& p) {
+  pos_ += p;
+  return *this;
+}

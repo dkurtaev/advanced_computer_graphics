@@ -17,6 +17,8 @@ class Triangle {
 
   Color GetColor() const;
 
+  void Move(const Point3f& delta);
+
  private:
   Point3f Project(const Point3f& point, const Point3f& dir) const;
 
