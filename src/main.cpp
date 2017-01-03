@@ -1,5 +1,6 @@
 #include <float.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include <iostream>
 #include <vector>
@@ -14,8 +15,14 @@
 
 void display();
 
+const unsigned kMoveDelay = 40;
+timeval last_move;
 unsigned display_width = 500;
 unsigned display_height = 500;
+std::vector<Triangle*> tris;
+Point3f camera_pos(0, 0, 5);
+uint8_t* canvas;
+Sphere* sphere;
 
 Triangle* FindIntersection(const std::vector<Triangle*>& tris,
                            const Point3f& ray_point, const Point3f& ray_dir,
@@ -29,13 +36,20 @@ Point3f Ray(const Point3f& from, const Point3f& dir,
             int iter = 0);
 
 int main(int argc, char** argv) {
-  glutInit(&argc, argv);
+  gettimeofday(&last_move, 0);
+  canvas = new uint8_t[3 * display_width * display_height];
+  CornellBox::GetTriangles(&tris);
+  sphere = new Sphere(&tris, Point3f(0.4, 0, -0.7), Point3f(0.1, 0.3, -0.1, true) * 0.05, 0.2,
+                      Point3f(1, 1, 0), 1);
 
+  glutInit(&argc, argv);
   glutInitWindowSize(display_width, display_height);
   glutInitWindowPosition(0, 0);
   glutCreateWindow("Single view");
 
   glutDisplayFunc(display);
+
+  glutIdleFunc(display);
 
   glutMainLoop();
 
@@ -43,17 +57,16 @@ int main(int argc, char** argv) {
 }
 
 void display() {
+  timeval t;
+  gettimeofday(&t, 0);
+  if ((t.tv_sec - last_move.tv_sec) * 1e+3 +
+      (t.tv_usec - last_move.tv_usec) * 1e-3 > kMoveDelay) {
+    sphere->Move(-1, 1, -1, 1, -2, 0);
+    last_move = t;
+  }
   glClear(GL_COLOR_BUFFER_BIT);
 
-  std::vector<Triangle*> tris;
-  CornellBox::GetTriangles(&tris);
-  Sphere::GetTriangles(&tris, Point3f(0.4, 0, -0.7), 0.2, 3);
-
-  Point3f camera_pos(0, 0, 5);
-
-  uint8_t* canvas = new uint8_t[3 * display_width * display_height];
   uint8_t* offset = canvas;
-
   float rgb[3];
   for (int y = 0; y < display_height; ++y) {
     float v = (float(y) / display_height) * 2.0f - 1.0f;

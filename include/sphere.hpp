@@ -8,10 +8,18 @@
 
 class Sphere {
  public:
-  static void GetTriangles(std::vector<Triangle*>* scene_triangles,
-                           const Point3f& center, float radius, int lod = 0);
+  Sphere(std::vector<Triangle*>* scene_triangles, const Point3f& center,
+         const Point3f& direction, float radius, const Color& color,
+         int lod = 0);
+
+  void Move(float min_x, float max_x, float min_y, float max_y,
+            float min_z, float max_z);
 
  private:
+  Point3f center_;
+  Point3f direction_;
+  float radius_;
+  std::vector<Triangle*> triangles_;
 };
 
 #endif  // INCLUDE_SPHERE_HPP_
