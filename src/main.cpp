@@ -23,7 +23,7 @@ Triangle* FindIntersection(const std::vector<Triangle*>& tris,
                            float max_distance = FLT_MAX);
 
 // Returns color.
-const int kMaxIters = 5;
+const int kMaxIters = 3;
 Point3f Ray(const Point3f& from, const Point3f& dir,
             const std::vector<Triangle*>& tris,
             int iter = 0);
