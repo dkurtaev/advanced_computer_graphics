@@ -5,17 +5,14 @@
 
 #include "include/point3f.hpp"
 #include "include/triangle.hpp"
+#include "include/vertex.hpp"
 
 class BoundingBox {
  public:
   // Origin point - (min_x, min_y, min_z);
   BoundingBox(const Point3f& origin, const Point3f& size);
 
-  BoundingBox(const std::vector<Triangle*>& tris);
-
-  int LongestDim(float* origin, float* size) const;
-
-  void Split(int dim, BoundingBox* left, BoundingBox* right) const;
+  BoundingBox(const Vertex& v1, const Vertex& v2, const Vertex& v3);
 
   bool IsIntersects(const Point3f& ray_point, const Point3f& ray) const;
 

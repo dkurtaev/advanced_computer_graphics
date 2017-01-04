@@ -50,13 +50,3 @@ void Triangle::Move(const Point3f& delta) {
   v2_ += delta;
   v3_ += delta;
 }
-
-void Triangle::GetCoords(float* dst, int dim) {
-  float tmp[3];
-  v1_.GetPos().GetCoords(tmp);
-  dst[0] = tmp[dim];
-  v2_.GetPos().GetCoords(tmp);
-  dst[1] = tmp[dim];
-  v3_.GetPos().GetCoords(tmp);
-  dst[2] = tmp[dim];
-}

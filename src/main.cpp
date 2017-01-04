@@ -12,6 +12,7 @@
 #include "include/triangle.hpp"
 #include "include/cornell_box.hpp"
 #include "include/sphere.hpp"
+#include "include/fps.hpp"
 
 void display();
 
@@ -22,6 +23,7 @@ unsigned display_height = 500;
 std::vector<Triangle*> cornell_box_tris;
 Point3f camera_pos(0, 0, 5);
 uint8_t* canvas;
+int max_processing_tris = 0;
 std::vector<Sphere*> spheres(2);
 
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
@@ -59,19 +61,17 @@ int main(int argc, char** argv) {
   for (int i = 0, n = cornell_box_tris.size(); i < n; ++i) {
     delete cornell_box_tris[i];
   }
+  std::cout << max_processing_tris << std::endl;
 
   return 0;
 }
 
 void display() {
-  timeval t;
-  gettimeofday(&t, 0);
-  if ((t.tv_sec - last_move.tv_sec) * 1e+3 +
-      (t.tv_usec - last_move.tv_usec) * 1e-3 > kMoveDelay) {
+  if (FPS::TimeFrom(last_move) > kMoveDelay) {
     for (int i = 0, n = spheres.size(); i < n; ++i) {
       spheres[i]->Move(-1, 1, -1, 1, -2, 0);
     }
-    last_move = t;
+    gettimeofday(&last_move, 0);
   }
   glClear(GL_COLOR_BUFFER_BIT);
 
@@ -92,6 +92,9 @@ void display() {
     }
   }
   glDrawPixels(display_width, display_height, GL_RGB, GL_UNSIGNED_BYTE, canvas);
+
+  FPS::Stack();
+  std::cout << "fps: " << FPS::Get() << std::endl;
   glutSwapBuffers();
 }
 
@@ -104,9 +107,10 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
 
   std::vector<Triangle*> tris(cornell_box_tris);
   for (int i = 0, n = spheres.size(); i < n; ++i) {
-    if (spheres[i]->IsIntersects(ray_point, ray_dir)) {
-      spheres[i]->GetTriangles(&tris);
-    }
+    spheres[i]->GetTriangles(ray_point, ray_dir, &tris);
+  }
+  if (tris.size() > max_processing_tris) {
+    max_processing_tris = tris.size();
   }
 
   Point3f tmp_intersection(0, 0, 0);

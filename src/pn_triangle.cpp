@@ -4,10 +4,9 @@
 
 #include "include/point3f.hpp"
 
-void PNTriangle::GetTriangles(std::vector<Triangle*>* scene_triangles,
-                              const Vertex& v1, const Vertex& v2,
-                              const Vertex& v3, const Color& color,
-                              int lod) {
+PNTriangle::PNTriangle(const Vertex& v1, const Vertex& v2, const Vertex& v3,
+                       const Color& color, int lod)
+    : bbox_(v1, v2, v3) {
   // 0 +            . p1
   //   |           . .
   //   |          .   .
@@ -23,7 +22,7 @@ void PNTriangle::GetTriangles(std::vector<Triangle*>* scene_triangles,
   const int num_vertices = (lod + 3) * (lod + 2) / 2;
   const int num_triangles = (lod + 1) * (lod + 1);
 
-  scene_triangles->reserve(scene_triangles->size() + num_triangles);
+  tris_.reserve(num_triangles);
 
   Point3f p1 = v1.GetPos();
   Point3f p2 = v2.GetPos();
@@ -77,22 +76,44 @@ void PNTriangle::GetTriangles(std::vector<Triangle*>* scene_triangles,
   idx = 1;
   for (int i = 0; i <= lod; ++i, idx += 2) {
     for (int j = 0; j < i; ++j, ++idx) {
-      scene_triangles->push_back(new Triangle(*vertices[idx],
-                                              *vertices[idx + 1],
-                                              *vertices[idx - i - 1],
-                                              color));
-      scene_triangles->push_back(new Triangle(*vertices[idx + 1],
-                                              *vertices[idx - i],
-                                              *vertices[idx - i - 1],
-                                              color));
+      tris_.push_back(new Triangle(*vertices[idx],
+                                   *vertices[idx + 1],
+                                   *vertices[idx - i - 1],
+                                   color));
+      tris_.push_back(new Triangle(*vertices[idx + 1],
+                                   *vertices[idx - i],
+                                   *vertices[idx - i - 1],
+                                   color));
     }
-    scene_triangles->push_back(new Triangle(*vertices[idx],
-                                            *vertices[idx + 1],
-                                            *vertices[idx - i - 1],
-                                            color));
+    tris_.push_back(new Triangle(*vertices[idx],
+                                 *vertices[idx + 1],
+                                 *vertices[idx - i - 1],
+                                 color));
   }
 
   for (int i = 0; i < num_vertices; ++i) {
     delete vertices[i];
   }
+}
+
+PNTriangle::~PNTriangle() {
+  for (int i = 0, n = tris_.size(); i < n; ++i) {
+    delete tris_[i];
+  }
+}
+
+bool PNTriangle::IsIntersects(const Point3f& point, const Point3f& ray) const {
+  return bbox_.IsIntersects(point, ray);
+}
+
+void PNTriangle::GetTriangles(std::vector<Triangle*>* tris) {
+  tris->reserve(tris->size() + tris_.size());
+  tris->insert(tris->end(), tris_.begin(), tris_.end());
+}
+
+void PNTriangle::Move(const Point3f& delta) {
+  for (int i = 0, n = tris_.size(); i < n; ++i) {
+    tris_[i]->Move(delta);
+  }
+  bbox_ += delta;
 }
