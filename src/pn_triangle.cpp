@@ -1,5 +1,7 @@
 #include "include/pn_triangle.hpp"
 
+#include <float.h>
+
 #include <vector>
 
 #include "include/point3f.hpp"
@@ -117,4 +119,33 @@ void PNTriangle::Move(const Point3f& delta) {
     tris_[i]->Move(delta);
   }
   bbox_ += delta;
+}
+
+Triangle* PNTriangle::FindIntersection(
+            const Point3f& ray_point, const Point3f& ray, Point3f* intersection,
+            float* u, float* v, float max_distance, int* num_processed_tris) {
+  static const float kMinDistance = 1e-2f;
+  Triangle* nearest_tri = 0;
+  float nearest_distance = FLT_MAX;
+  Point3f tmp_intersection(0, 0, 0);
+  float tmp_u, tmp_v;
+  float distance;
+
+  *num_processed_tris += tris_.size();
+
+  for (int i = 0, n = tris_.size(); i < n; ++i) {
+    Triangle* tri = tris_[i];
+    if (tri->IsIntersects(ray_point, ray, &tmp_intersection,
+                          &tmp_u, &tmp_v, &distance)) {
+      if (distance < nearest_distance &&
+          kMinDistance < distance && distance < max_distance) {
+        nearest_tri = tri;
+        nearest_distance = distance;
+        *intersection = tmp_intersection;
+        *u = tmp_u;
+        *v = tmp_v;
+      }
+    }
+  }
+  return nearest_tri;
 }

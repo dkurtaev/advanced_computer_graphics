@@ -1,7 +1,6 @@
 #include "include/sphere.hpp"
 
 #include <math.h>
-#include <float.h>
 
 #include <algorithm>
 
@@ -116,34 +115,12 @@ Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
   }
   std::sort(octants_on_ray.begin(), octants_on_ray.end(), comparator);
 
-  static const float kMinDistance = 1e-2f;
   Triangle* nearest_tri = 0;
-  float nearest_distance = FLT_MAX;
-  Point3f tmp_intersection(0, 0, 0);
-  float tmp_u, tmp_v;
-  float distance;
-
   int n_octants = octants_on_ray.size();
   n_octants = std::min(4, n_octants);
   for (int i = 0; i < n_octants && !nearest_tri; ++i) {
-    std::vector<Triangle*> tris;
-    octants_on_ray[i].second->GetTriangles(&tris);
-    *num_processed_tris += tris.size();
-
-    for (int j = 0, n = tris.size(); j < n; ++j) {
-      Triangle* tri = tris[j];
-      if (tri->IsIntersects(ray_point, ray, &tmp_intersection,
-                            &tmp_u, &tmp_v, &distance)) {
-        if (distance < nearest_distance &&
-            kMinDistance < distance && distance < max_distance) {
-          nearest_tri = tri;
-          nearest_distance = distance;
-          *intersection = tmp_intersection;
-          *u = tmp_u;
-          *v = tmp_v;
-        }
-      }
-    }
+    nearest_tri = octants_on_ray[i].second->FindIntersection(
+      ray_point, ray, intersection, u, v, max_distance, num_processed_tris);
   }
   return nearest_tri;
 }
