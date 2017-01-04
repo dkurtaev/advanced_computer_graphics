@@ -27,6 +27,8 @@ class PNTriangle {
                              Point3f* intersection, float* u, float* v,
                              float max_distance);
 
+  void SetColor(const Color& color);
+
  private:
   std::vector<Triangle*> tris_;
   BoundingBox bbox_;

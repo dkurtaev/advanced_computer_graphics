@@ -135,3 +135,10 @@ Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
   }
   return nearest_tri;
 }
+
+void Sphere::SetColor(const Color& color) {
+  for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
+    pn_tris_[i]->SetColor(color);
+  }
+  color_ = color;
+}

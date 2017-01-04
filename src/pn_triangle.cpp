@@ -137,3 +137,9 @@ Triangle* PNTriangle::FindIntersection(
   }
   return 0;
 }
+
+void PNTriangle::SetColor(const Color& color) {
+  for (int i = 0, n = tris_.size(); i < n; ++i) {
+    tris_[i]->SetColor(color);
+  }
+}

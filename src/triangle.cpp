@@ -57,3 +57,7 @@ void Triangle::Move(const Point3f& delta) {
   v2_ += delta;
   v3_ += delta;
 }
+
+void Triangle::SetColor(const Color& color) {
+  color_ = color;
+}

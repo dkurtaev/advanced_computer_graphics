@@ -27,6 +27,8 @@ class Sphere {
                              Point3f* intersection, float* u, float* v,
                              float max_distance);
 
+  void SetColor(const Color& color);
+
  private:
   void Init(int lod);
 

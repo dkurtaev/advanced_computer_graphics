@@ -16,17 +16,18 @@
 
 void display();
 
-const unsigned kNumSpheres = 10;
 const unsigned kDisplayWidth = 256;
 const unsigned kDisplayHeight = 256;
 const int kMaxRayIters = 3;
 unsigned level_of_detalization = 0;
+unsigned window_handle;
+int num_frames;
 Point3f camera_pos(0, 0, 5);
 
 std::vector<Triangle*> cornell_box_tris;
 unsigned display_time = 0;
 unsigned num_dispay_calls = 0;
-std::vector<Sphere*> spheres(kNumSpheres);
+std::vector<Sphere*> spheres;
 
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
                            Point3f* intersection, float* u, float* v,
@@ -35,6 +36,7 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
 // Returns color.
 Point3f Ray(const Point3f& from, const Point3f& dir, int iter = 0);
 void SpecialKeyPressed(int key, int x, int y);
+void MouseFunc(int button, int state, int x, int y);
 int TimeFrom(const timeval& t);
 float Rand();
 
@@ -42,7 +44,16 @@ int main(int argc, char** argv) {
   CornellBox::GetTriangles(&cornell_box_tris);
 
   // Setup spheres.
-  float radius = 0.2f, speed = 0.05f;
+  int n_spheres;
+  float radius;
+  std::cout << "Number of spheres: "; std::cin >> n_spheres;
+  std::cout << "Radius of spheres: "; std::cin >> radius;
+  std::cout << "Level of detalization: "; std::cin >> level_of_detalization;
+  std::cout << "Number of display calls (-1 for infinite): ";
+  std::cin >> num_frames;
+  spheres.resize(n_spheres);
+
+  float speed = 0.05f;
   float center_x = CornellBox::kLeft + 2 * radius;
   float center_y = CornellBox::kBottom + 2 * radius;
   float center_z = CornellBox::kBack + 2 * radius;
@@ -70,8 +81,9 @@ int main(int argc, char** argv) {
   glutInit(&argc, argv);
   glutInitWindowSize(kDisplayWidth, kDisplayHeight);
   glutInitWindowPosition(0, 0);
-  glutCreateWindow("Single view");
+  window_handle = glutCreateWindow("Ray tracing");
   glutSpecialFunc(SpecialKeyPressed);
+  glutMouseFunc(MouseFunc);
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
   glutDisplayFunc(display);
@@ -130,6 +142,10 @@ void display() {
   display_time += TimeFrom(start);
   num_dispay_calls += 1;
   glutSwapBuffers();
+
+  if (num_dispay_calls == num_frames) {
+    glutDestroyWindow(window_handle);
+  }
 }
 
 bool comparator(const std::pair<float, Sphere*>& first,
@@ -251,4 +267,38 @@ int TimeFrom(const timeval& t) {
   timeval now;
   gettimeofday(&now, 0);
   return (now.tv_sec - t.tv_sec) * 1e+3 + (now.tv_usec - t.tv_usec) * 1e-3;
+}
+
+void MouseFunc(int button, int state, int x, int y) {
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    float u = (float(x) / kDisplayWidth) * 2.0f - 1.0f;
+    float v = 1.0f - (float(y) / kDisplayHeight) * 2.0f;
+    Point3f ray(Point3f(u, v, 0) - camera_pos, true);
+
+    std::pair<float, Sphere*> p;
+    std::vector<std::pair<float, Sphere*> > spheres_on_ray;
+    for (int i = 0, n = spheres.size(); i < n; ++i) {
+      if (spheres[i]->IsIntersects(camera_pos, ray, &p.first)) {
+        p.second = spheres[i];
+        spheres_on_ray.push_back(p);
+      }
+    }
+    if (!spheres_on_ray.empty()) {
+      std::sort(spheres_on_ray.begin(), spheres_on_ray.end(), comparator);
+
+      float r, g, b;
+      float ambient, diffuse, reflection;
+      std::cout << "Sphere selected" << std::endl
+                << "Color (r g b): ";
+      std::cin >> r >> g >> b;
+      std::cout << "Ambient: "; std::cin >> ambient;
+      std::cout << "Diffuse: "; std::cin >> diffuse;
+      std::cout << "Reflection: "; std::cin >> reflection;
+
+      spheres_on_ray[0].second->SetColor(Color(Point3f(r, g, b),
+                                               reflection,
+                                               ambient,
+                                               diffuse));
+    }
+  }
 }
