@@ -3,6 +3,8 @@
 #include <math.h>
 #include <float.h>
 
+#include <algorithm>
+
 #include "include/pn_triangle.hpp"
 
 Sphere::Sphere(const Point3f& center, const Point3f& direction, float radius,
@@ -94,10 +96,26 @@ bool Sphere::IsIntersects(const Point3f& ray_point, const Point3f& ray,
   }
 }
 
+bool comparator(const std::pair<float, PNTriangle*>& first,
+                const std::pair<float, PNTriangle*>& second) {
+  return first.first < second.first;
+}
+
 Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
                                    Point3f* intersection, float* u, float* v,
                                    float max_distance,
                                    int* num_processed_tris) {
+  std::vector<std::pair<float, PNTriangle*> > octants_on_ray;
+
+  std::pair<float, PNTriangle*> p;
+  for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
+    if (pn_tris_[i]->IsIntersects(ray_point, ray, &p.first)) {
+      p.second = pn_tris_[i];
+      octants_on_ray.push_back(p);
+    }
+  }
+  std::sort(octants_on_ray.begin(), octants_on_ray.end(), comparator);
+
   static const float kMinDistance = 1e-2f;
   Triangle* nearest_tri = 0;
   float nearest_distance = FLT_MAX;
@@ -105,24 +123,24 @@ Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
   float tmp_u, tmp_v;
   float distance;
 
-  for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
-    if (pn_tris_[i]->IsIntersects(ray_point, ray)) {
-      std::vector<Triangle*> tris;
-      pn_tris_[i]->GetTriangles(&tris);
-      *num_processed_tris += tris.size();
+  int n_octants = octants_on_ray.size();
+  n_octants = std::min(4, n_octants);
+  for (int i = 0; i < n_octants && !nearest_tri; ++i) {
+    std::vector<Triangle*> tris;
+    octants_on_ray[i].second->GetTriangles(&tris);
+    *num_processed_tris += tris.size();
 
-      for (int j = 0, n = tris.size(); j < n; ++j) {
-        Triangle* tri = tris[j];
-        if (tri->IsIntersects(ray_point, ray, &tmp_intersection,
-                              &tmp_u, &tmp_v, &distance)) {
-          if (distance < nearest_distance &&
-              kMinDistance < distance && distance < max_distance) {
-            nearest_tri = tri;
-            nearest_distance = distance;
-            *intersection = tmp_intersection;
-            *u = tmp_u;
-            *v = tmp_v;
-          }
+    for (int j = 0, n = tris.size(); j < n; ++j) {
+      Triangle* tri = tris[j];
+      if (tri->IsIntersects(ray_point, ray, &tmp_intersection,
+                            &tmp_u, &tmp_v, &distance)) {
+        if (distance < nearest_distance &&
+            kMinDistance < distance && distance < max_distance) {
+          nearest_tri = tri;
+          nearest_distance = distance;
+          *intersection = tmp_intersection;
+          *u = tmp_u;
+          *v = tmp_v;
         }
       }
     }

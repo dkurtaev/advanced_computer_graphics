@@ -102,9 +102,9 @@ PNTriangle::~PNTriangle() {
   }
 }
 
-bool PNTriangle::IsIntersects(const Point3f& point, const Point3f& ray) const {
-  float distance;
-  return bbox_.IsIntersects(point, ray, &distance);
+bool PNTriangle::IsIntersects(const Point3f& point, const Point3f& ray,
+                              float* distance) const {
+  return bbox_.IsIntersects(point, ray, distance);
 }
 
 void PNTriangle::GetTriangles(std::vector<Triangle*>* tris) {

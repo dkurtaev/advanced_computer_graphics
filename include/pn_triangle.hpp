@@ -16,7 +16,8 @@ class PNTriangle {
 
   ~PNTriangle();
 
-  bool IsIntersects(const Point3f& ray_point, const Point3f& ray) const;
+  bool IsIntersects(const Point3f& ray_point, const Point3f& ray,
+                    float* distance) const;
 
   void GetTriangles(std::vector<Triangle*>* tris);
 
