@@ -20,8 +20,8 @@ void display();
 const unsigned kMoveDelay = 40;
 const unsigned kNumSpheres = 10;
 timeval last_move;
-unsigned display_width = 500;
-unsigned display_height = 500;
+unsigned display_width = 256;
+unsigned display_height = 256;
 std::vector<Triangle*> cornell_box_tris;
 Point3f camera_pos(0, 0, 5);
 uint8_t* canvas;
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
                   (float)rand() / RAND_MAX,
                   (float)rand() / RAND_MAX);
     spheres[i] = new Sphere(Point3f(center_x, center_y, center_z), dir  * speed,
-                            radius, color, 3);
+                            radius, color, 0);
     center_x += 3 * radius;
     if (center_x + radius >= CornellBox::kRight) {
       center_x = CornellBox::kLeft + 2 * radius;

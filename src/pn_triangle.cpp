@@ -125,27 +125,16 @@ Triangle* PNTriangle::FindIntersection(
             const Point3f& ray_point, const Point3f& ray, Point3f* intersection,
             float* u, float* v, float max_distance, int* num_processed_tris) {
   static const float kMinDistance = 1e-2f;
-  Triangle* nearest_tri = 0;
-  float nearest_distance = FLT_MAX;
-  Point3f tmp_intersection(0, 0, 0);
-  float tmp_u, tmp_v;
+
   float distance;
-
-  *num_processed_tris += tris_.size();
-
   for (int i = 0, n = tris_.size(); i < n; ++i) {
     Triangle* tri = tris_[i];
-    if (tri->IsIntersects(ray_point, ray, &tmp_intersection,
-                          &tmp_u, &tmp_v, &distance)) {
-      if (distance < nearest_distance &&
-          kMinDistance < distance && distance < max_distance) {
-        nearest_tri = tri;
-        nearest_distance = distance;
-        *intersection = tmp_intersection;
-        *u = tmp_u;
-        *v = tmp_v;
+    if (tri->IsIntersects(ray_point, ray, intersection, u, v, &distance)) {
+      if (kMinDistance < distance && distance < max_distance) {
+        *num_processed_tris += i + 1;
+        return tri;
       }
     }
   }
-  return nearest_tri;
+  return 0;
 }
