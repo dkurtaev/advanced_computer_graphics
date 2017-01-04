@@ -1,6 +1,7 @@
 #include "include/sphere.hpp"
 
 #include <math.h>
+#include <float.h>
 
 #include "include/pn_triangle.hpp"
 
@@ -70,15 +71,6 @@ void Sphere::Move(float min_x, float max_x, float min_y, float max_y,
   *bbox_ += direction_;
 }
 
-void Sphere::GetTriangles(const Point3f& ray_point, const Point3f& ray,
-                          std::vector<Triangle*>* tris) {
-  for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
-    if (pn_tris_[i]->IsIntersects(ray_point, ray)) {
-      pn_tris_[i]->GetTriangles(tris);
-    }
-  }
-}
-
 bool Sphere::IsIntersects(const Sphere& sphere) {
   return center_.SqDistanceTo(sphere.center_) <=
          radius_ * radius_ + sphere.radius_ * sphere.radius_ +
@@ -100,4 +92,40 @@ bool Sphere::IsIntersects(const Point3f& ray_point, const Point3f& ray,
   } else {
     return false;
   }
+}
+
+Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
+                                   Point3f* intersection, float* u, float* v,
+                                   float max_distance,
+                                   int* num_processed_tris) {
+  static const float kMinDistance = 1e-2f;
+  Triangle* nearest_tri = 0;
+  float nearest_distance = FLT_MAX;
+  Point3f tmp_intersection(0, 0, 0);
+  float tmp_u, tmp_v;
+  float distance;
+
+  for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
+    if (pn_tris_[i]->IsIntersects(ray_point, ray)) {
+      std::vector<Triangle*> tris;
+      pn_tris_[i]->GetTriangles(&tris);
+      *num_processed_tris += tris.size();
+
+      for (int j = 0, n = tris.size(); j < n; ++j) {
+        Triangle* tri = tris[j];
+        if (tri->IsIntersects(ray_point, ray, &tmp_intersection,
+                              &tmp_u, &tmp_v, &distance)) {
+          if (distance < nearest_distance &&
+              kMinDistance < distance && distance < max_distance) {
+            nearest_tri = tri;
+            nearest_distance = distance;
+            *intersection = tmp_intersection;
+            *u = tmp_u;
+            *v = tmp_v;
+          }
+        }
+      }
+    }
+  }
+  return nearest_tri;
 }

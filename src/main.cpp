@@ -20,8 +20,8 @@ void display();
 const unsigned kMoveDelay = 40;
 const unsigned kNumSpheres = 10;
 timeval last_move;
-unsigned display_width = 100;
-unsigned display_height = 100;
+unsigned display_width = 500;
+unsigned display_height = 500;
 std::vector<Triangle*> cornell_box_tris;
 Point3f camera_pos(0, 0, 5);
 uint8_t* canvas;
@@ -30,6 +30,7 @@ int max_processed_tris = 0;
 int max_spheres_on_ray = 0;
 int nearest_processed_sphere = kNumSpheres;
 int farest_processed_sphere = 0;
+int max_tris_from_sphere = 0;
 
 std::vector<Sphere*> spheres(kNumSpheres);
 
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
                   (float)rand() / RAND_MAX,
                   (float)rand() / RAND_MAX);
     spheres[i] = new Sphere(Point3f(center_x, center_y, center_z), dir  * speed,
-                            radius, color, 3);
+                            radius, color, 0);
     center_x += 3 * radius;
     if (center_x + radius >= CornellBox::kRight) {
       center_x = CornellBox::kLeft + 2 * radius;
@@ -93,6 +94,7 @@ int main(int argc, char** argv) {
   std::cout << "Max. spheres on ray: " << max_spheres_on_ray << std::endl;
   std::cout << "Nearest proc. sphere: " << nearest_processed_sphere << std::endl;
   std::cout << "Farest proc. sphere: " << farest_processed_sphere << std::endl;
+  std::cout << "Max. tris from sphere sphere: " << max_tris_from_sphere << std::endl;
 
   return 0;
 }
@@ -140,11 +142,7 @@ bool comparator(const std::pair<float, Sphere*>& first,
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
                            Point3f* intersection, float* u, float* v,
                            float max_distance) {
-  static const float kMinDistance = 1e-2f;
   Triangle* nearest_tri = 0;
-  float nearest_distance = FLT_MAX;
-  Point3f tmp_intersection(0, 0, 0);
-  float tmp_u, tmp_v;
 
   // Collect spheres which bounding boxes' intersects by ray.
   float distance;
@@ -156,31 +154,24 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
   }
   std::sort(spheres_on_ray.begin(), spheres_on_ray.end(), comparator);
 
-  bool found = false;
   int processed_tris = 0;
   if (!spheres_on_ray.empty()) {
     // Ray intersects one of spheres.
     for (int i = 0, n = spheres_on_ray.size(); i < n; ++i) {
-      std::vector<Triangle*> tris;
-      spheres_on_ray[i].second->GetTriangles(ray_point, ray_dir, &tris);
+      int num_tris_on_sphere = 0;
 
-      processed_tris += tris.size();
-      for (int j = 0, n = tris.size(); j < n; ++j) {
-        Triangle* tri = tris[j];
-        if (tri->IsIntersects(ray_point, ray_dir, &tmp_intersection,
-                              &tmp_u, &tmp_v, &distance)) {
-          if (distance < nearest_distance &&
-              kMinDistance < distance && distance < max_distance) {
-            nearest_tri = tri;
-            nearest_distance = distance;
-            *intersection = tmp_intersection;
-            *u = tmp_u;
-            *v = tmp_v;
-            found = true;
-          }
-        }
+      nearest_tri = spheres_on_ray[i].second->FindIntersection(
+        ray_point, ray_dir, intersection, u, v, max_distance,
+        &num_tris_on_sphere
+      );
+
+      processed_tris += num_tris_on_sphere;
+
+      if (num_tris_on_sphere > max_tris_from_sphere) {
+        max_tris_from_sphere = num_tris_on_sphere;
       }
-      if (found) {
+
+      if (nearest_tri) {
         if (i + 1 < nearest_processed_sphere) {
           nearest_processed_sphere = i + 1;
         }
@@ -195,18 +186,15 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
     }
   }
 
-  if (!found) {
+  if (!nearest_tri) {
     // Ray intersects Cornell box.
     for (int i = 0, n = cornell_box_tris.size(); i < n; ++i) {
       Triangle* tri = cornell_box_tris[i];
       processed_tris += 1;
-      if (tri->IsIntersects(ray_point, ray_dir, &tmp_intersection,
-                            &tmp_u, &tmp_v, &distance)) {
+      if (tri->IsIntersects(ray_point, ray_dir, intersection, u, v,
+                            &distance)) {
         if (distance < max_distance) {
           nearest_tri = tri;
-          *intersection = tmp_intersection;
-          *u = tmp_u;
-          *v = tmp_v;
           break;
         }
       }

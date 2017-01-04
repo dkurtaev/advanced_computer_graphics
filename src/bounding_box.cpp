@@ -8,7 +8,7 @@ BoundingBox::BoundingBox(const Point3f& origin, const Point3f& size)
 BoundingBox::BoundingBox(const Vertex& v1, const Vertex& v2, const Vertex& v3)
     : origin_(0, 0, 0), size_(0, 0, 0) {
   float min[] = {FLT_MAX, FLT_MAX, FLT_MAX};
-  float max[] = {FLT_MIN, FLT_MIN, FLT_MIN};
+  float max[] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
   const Point3f pts[] = { v1.GetPos(), v2.GetPos(), v3.GetPos() };
   for (int i = 0; i < 3; ++i) {
     float coords[3];
