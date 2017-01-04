@@ -25,8 +25,9 @@ class PNTriangle {
 
   Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray,
                              Point3f* intersection, float* u, float* v,
-                             float max_distance,
-                             int* num_processed_tris);
+                             float max_distance);
+
+  void SetColor(const Color& color);
 
  private:
   std::vector<Triangle*> tris_;

@@ -20,6 +20,8 @@ class Triangle {
 
   void Move(const Point3f& delta);
 
+  void SetColor(const Color& color);
+
  private:
   Vertex v1_, v2_, v3_;
   Color color_;

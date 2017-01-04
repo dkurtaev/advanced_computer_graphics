@@ -13,6 +13,8 @@ class Sphere {
   Sphere(const Point3f& center, const Point3f& direction, float radius,
          const Color& color, int lod = 0);
 
+  Sphere(const Sphere& sphere, int lod);
+
   ~Sphere();
 
   void Move(float min_x, float max_x, float min_y, float max_y,
@@ -23,9 +25,13 @@ class Sphere {
 
   Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray,
                              Point3f* intersection, float* u, float* v,
-                             float max_distance, int* num_processed_tris);
+                             float max_distance);
+
+  void SetColor(const Color& color);
 
  private:
+  void Init(int lod);
+
   bool IsIntersects(const Sphere& sphere);
 
   Point3f center_;
@@ -33,6 +39,7 @@ class Sphere {
   float radius_;
   std::vector<PNTriangle*> pn_tris_;
   BoundingBox* bbox_;
+  Color color_;
 };
 
 #endif  // INCLUDE_SPHERE_HPP_
