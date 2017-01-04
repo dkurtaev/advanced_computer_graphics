@@ -8,7 +8,8 @@ Triangle::Triangle(const Vertex& v1, const Vertex& v2, const Vertex& v3,
     : v1_(v1), v2_(v2), v3_(v3), color_(color) {}
 
 bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray,
-                            Point3f* intersection, float* u, float* v) const {
+                            Point3f* intersection, float* u, float* v,
+                            float* distance) const {
   Point3f p1 = v1_.GetPos();
   Point3f p2 = v2_.GetPos();
   Point3f p3 = v3_.GetPos();
@@ -27,8 +28,14 @@ bool Triangle::IsIntersects(const Point3f& start_point, const Point3f& ray,
 
   float w = *u + *v;
   if (w <= 1.0f) {
-    *intersection = *u * p1 + *v * p2 + (1.0f - w) * p3;
-    return Point3f::Dot(ray, *intersection - start_point) > 0;
+    *distance = -Point3f::Det(right_part, b, c) / denominator;
+    if (*distance > 0) {
+      *intersection = start_point + *distance * ray;
+      *distance *= *distance;
+      return true;
+    } else {
+      return false;
+    }
   } else {
     return false;
   }
@@ -43,4 +50,10 @@ Point3f Triangle::GetNormal(float u, float v) {
   Point3f n2 = v2_.GetNormal();
   Point3f n3 = v3_.GetNormal();
   return Point3f(n1 * u + n2 * v + n3 * (1.0f - u - v), true);
+}
+
+void Triangle::Move(const Point3f& delta) {
+  v1_ += delta;
+  v2_ += delta;
+  v3_ += delta;
 }

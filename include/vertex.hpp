@@ -15,6 +15,8 @@ class Vertex {
 
   Point3f operator -(const Point3f& p) const;
 
+  Vertex& operator +=(const Point3f& p);
+
   Point3f GetPos() const;
 
   Point3f GetNormal() const;

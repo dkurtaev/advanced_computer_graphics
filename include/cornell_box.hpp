@@ -12,10 +12,11 @@ class CornellBox {
 
   static Point3f GetLightSrc();
 
- private:
-  static const float kSize = 1.0f;
   static const float kBack = -2.0f;
   static const float kFront = 0.0f;
+  static const float kLeft = -1.0f;
+  static const float kRight = 1.0f;
+  static const float kTop = 1.0f;
+  static const float kBottom = -1.0f;
 };
-
 #endif  // INCLUDE_CORNELL_BOX_HPP_

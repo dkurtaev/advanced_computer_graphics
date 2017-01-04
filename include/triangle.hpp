@@ -11,15 +11,16 @@ class Triangle {
            const Color& color);
 
   bool IsIntersects(const Point3f& start_point, const Point3f& ray,
-                    Point3f* intersection, float* u, float* v) const;
+                    Point3f* intersection, float* u, float* v,
+                    float* distance) const;
 
   Point3f GetNormal(float u, float v);
 
   Color GetColor() const;
 
- private:
-  Point3f Project(const Point3f& point, const Point3f& dir) const;
+  void Move(const Point3f& delta);
 
+ private:
   Vertex v1_, v2_, v3_;
   Color color_;
 };
