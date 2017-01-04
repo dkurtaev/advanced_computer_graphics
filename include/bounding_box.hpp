@@ -14,7 +14,8 @@ class BoundingBox {
 
   BoundingBox(const Vertex& v1, const Vertex& v2, const Vertex& v3);
 
-  bool IsIntersects(const Point3f& ray_point, const Point3f& ray) const;
+  bool IsIntersects(const Point3f& ray_point, const Point3f& ray,
+                    float* distance) const;
 
   BoundingBox& operator +=(const Point3f& p);
 

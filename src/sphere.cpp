@@ -70,11 +70,9 @@ void Sphere::Move(float min_x, float max_x, float min_y, float max_y,
 
 void Sphere::GetTriangles(const Point3f& ray_point, const Point3f& ray,
                           std::vector<Triangle*>* tris) {
-  if (bbox_->IsIntersects(ray_point, ray)) {
-    for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
-      if (pn_tris_[i]->IsIntersects(ray_point, ray)) {
-        pn_tris_[i]->GetTriangles(tris);
-      }
+  for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
+    if (pn_tris_[i]->IsIntersects(ray_point, ray)) {
+      pn_tris_[i]->GetTriangles(tris);
     }
   }
 }
@@ -83,4 +81,9 @@ bool Sphere::IsIntersects(const Sphere& sphere) {
   return center_.SqDistanceTo(sphere.center_) <=
          radius_ * radius_ + sphere.radius_ * sphere.radius_ +
          2.0f * radius_ * sphere.radius_;
+}
+
+bool Sphere::IsIntersects(const Point3f& ray_point, const Point3f& ray,
+                          float* distance) const {
+  return bbox_->IsIntersects(ray_point, ray, distance);
 }

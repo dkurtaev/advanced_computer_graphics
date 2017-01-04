@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include <GL/freeglut.h>
 
@@ -17,15 +18,20 @@
 void display();
 
 const unsigned kMoveDelay = 40;
+const unsigned kNumSpheres = 10;
 timeval last_move;
-unsigned display_width = 300;
-unsigned display_height = 300;
+unsigned display_width = 100;
+unsigned display_height = 100;
 std::vector<Triangle*> cornell_box_tris;
 Point3f camera_pos(0, 0, 5);
 uint8_t* canvas;
-int max_processing_tris = 0;
 
-std::vector<Sphere*> spheres(10);
+int max_processed_tris = 0;
+int max_spheres_on_ray = 0;
+int nearest_processed_sphere = kNumSpheres;
+int farest_processed_sphere = 0;
+
+std::vector<Sphere*> spheres(kNumSpheres);
 
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
                            Point3f* intersection, float* u, float* v,
@@ -83,7 +89,10 @@ int main(int argc, char** argv) {
   for (int i = 0, n = cornell_box_tris.size(); i < n; ++i) {
     delete cornell_box_tris[i];
   }
-  std::cout << max_processing_tris << std::endl;
+  std::cout << "Max. processed triangles: " << max_processed_tris << std::endl;
+  std::cout << "Max. spheres on ray: " << max_spheres_on_ray << std::endl;
+  std::cout << "Nearest proc. sphere: " << nearest_processed_sphere << std::endl;
+  std::cout << "Farest proc. sphere: " << farest_processed_sphere << std::endl;
 
   return 0;
 }
@@ -123,36 +132,88 @@ void display() {
   glutSwapBuffers();
 }
 
+bool comparator(const std::pair<float, Sphere*>& first,
+                const std::pair<float, Sphere*>& second) {
+  return first.first < second.first;
+}
+
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
                            Point3f* intersection, float* u, float* v,
                            float max_distance) {
   static const float kMinDistance = 1e-2f;
   Triangle* nearest_tri = 0;
   float nearest_distance = FLT_MAX;
-
-  std::vector<Triangle*> tris(cornell_box_tris);
-  for (int i = 0, n = spheres.size(); i < n; ++i) {
-    spheres[i]->GetTriangles(ray_point, ray_dir, &tris);
-  }
-  if (tris.size() > max_processing_tris) {
-    max_processing_tris = tris.size();
-  }
-
   Point3f tmp_intersection(0, 0, 0);
   float tmp_u, tmp_v;
-  for (int i = 0, n = tris.size(); i < n; ++i) {
-    if (tris[i]->IsIntersects(ray_point, ray_dir, &tmp_intersection,
-                              &tmp_u, &tmp_v)) {
-      float distance = tmp_intersection.SqDistanceTo(ray_point);
-      if (distance < nearest_distance &&
-          kMinDistance < distance && distance < max_distance) {
-        nearest_tri = tris[i];
-        nearest_distance = distance;
-        *intersection = tmp_intersection;
-        *u = tmp_u;
-        *v = tmp_v;
+
+  // Collect spheres which bounding boxes' intersects by ray.
+  float distance;
+  std::vector<std::pair<float, Sphere*> > spheres_on_ray;
+  for (int i = 0, n = spheres.size(); i < n; ++i) {
+    if (spheres[i]->IsIntersects(ray_point, ray_dir, &distance)) {
+      spheres_on_ray.push_back(std::pair<float, Sphere*>(distance, spheres[i]));
+    }
+  }
+  std::sort(spheres_on_ray.begin(), spheres_on_ray.end(), comparator);
+
+  bool found = false;
+  int processed_tris = 0;
+  if (!spheres_on_ray.empty()) {
+    // Ray intersects one of spheres.
+    for (int i = 0, n = spheres_on_ray.size(); i < n; ++i) {
+      std::vector<Triangle*> tris;
+      spheres_on_ray[i].second->GetTriangles(ray_point, ray_dir, &tris);
+
+      processed_tris += tris.size();
+      for (int j = 0, n = tris.size(); j < n; ++j) {
+        Triangle* tri = tris[j];
+        if (tri->IsIntersects(ray_point, ray_dir, &tmp_intersection,
+                              &tmp_u, &tmp_v, &distance)) {
+          if (distance < nearest_distance &&
+              kMinDistance < distance && distance < max_distance) {
+            nearest_tri = tri;
+            nearest_distance = distance;
+            *intersection = tmp_intersection;
+            *u = tmp_u;
+            *v = tmp_v;
+            found = true;
+          }
+        }
+      }
+      if (found) {
+        if (i + 1 < nearest_processed_sphere) {
+          nearest_processed_sphere = i + 1;
+        }
+        if (i + 1 > farest_processed_sphere) {
+          farest_processed_sphere = i + 1;
+        }
+        break;
       }
     }
+    if (spheres_on_ray.size() > max_spheres_on_ray) {
+      max_spheres_on_ray = spheres_on_ray.size();
+    }
+  }
+
+  if (!found) {
+    // Ray intersects Cornell box.
+    for (int i = 0, n = cornell_box_tris.size(); i < n; ++i) {
+      Triangle* tri = cornell_box_tris[i];
+      processed_tris += 1;
+      if (tri->IsIntersects(ray_point, ray_dir, &tmp_intersection,
+                            &tmp_u, &tmp_v, &distance)) {
+        if (distance < max_distance) {
+          nearest_tri = tri;
+          *intersection = tmp_intersection;
+          *u = tmp_u;
+          *v = tmp_v;
+          break;
+        }
+      }
+    }
+  }
+  if (processed_tris > max_processed_tris) {
+    max_processed_tris = processed_tris;
   }
   return nearest_tri;
 }

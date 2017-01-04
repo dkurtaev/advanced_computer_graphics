@@ -18,6 +18,9 @@ class Sphere {
   void Move(float min_x, float max_x, float min_y, float max_y,
             float min_z, float max_z, const std::vector<Sphere*>& spheres);
 
+  bool IsIntersects(const Point3f& ray_point, const Point3f& ray,
+                    float* distance) const;
+
   void GetTriangles(const Point3f& ray_point, const Point3f& ray,
                     std::vector<Triangle*>* tris);
 

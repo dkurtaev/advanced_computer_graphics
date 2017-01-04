@@ -23,7 +23,7 @@ BoundingBox::BoundingBox(const Vertex& v1, const Vertex& v2, const Vertex& v3)
 }
 
 bool BoundingBox::IsIntersects(const Point3f& ray_point,
-                               const Point3f& ray) const {
+                               const Point3f& ray, float* distance) const {
   float point[3], dir[3], origin[3], size[3];
   ray_point.GetCoords(point);
   ray.GetCoords(dir);
@@ -53,6 +53,7 @@ bool BoundingBox::IsIntersects(const Point3f& ray_point,
       }
     }
   }
+  *distance = min;
   return true;
 }
 
