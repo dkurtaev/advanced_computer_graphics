@@ -13,25 +13,19 @@
 #include "include/triangle.hpp"
 #include "include/cornell_box.hpp"
 #include "include/sphere.hpp"
-#include "include/fps.hpp"
 
 void display();
 
-const unsigned kMoveDelay = 40;
 const unsigned kNumSpheres = 10;
-timeval last_move;
-unsigned display_width = 256;
-unsigned display_height = 256;
-std::vector<Triangle*> cornell_box_tris;
+const unsigned kDisplayWidth = 256;
+const unsigned kDisplayHeight = 256;
+const int kMaxRayIters = 3;
+unsigned level_of_detalization = 0;
 Point3f camera_pos(0, 0, 5);
-uint8_t* canvas;
 
-int max_processed_tris = 0;
-int max_spheres_on_ray = 0;
-int nearest_processed_sphere = kNumSpheres;
-int farest_processed_sphere = 0;
-int max_tris_from_sphere = 0;
-
+std::vector<Triangle*> cornell_box_tris;
+unsigned display_time = 0;
+unsigned num_dispay_calls = 0;
 std::vector<Sphere*> spheres(kNumSpheres);
 
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
@@ -39,12 +33,12 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
                            float max_distance = FLT_MAX);
 
 // Returns color.
-const int kMaxIters = 3;
 Point3f Ray(const Point3f& from, const Point3f& dir, int iter = 0);
+void SpecialKeyPressed(int key, int x, int y);
+int TimeFrom(const timeval& t);
+float Rand();
 
 int main(int argc, char** argv) {
-  gettimeofday(&last_move, 0);
-  canvas = new uint8_t[3 * display_width * display_height];
   CornellBox::GetTriangles(&cornell_box_tris);
 
   // Setup spheres.
@@ -53,13 +47,14 @@ int main(int argc, char** argv) {
   float center_y = CornellBox::kBottom + 2 * radius;
   float center_z = CornellBox::kBack + 2 * radius;
   for (int i = 0, n = spheres.size(); i < n; ++i) {
-    Point3f dir((float)rand() / RAND_MAX, (float)rand() / RAND_MAX,
+    Point3f dir((float)rand() / RAND_MAX,
+                (float)rand() / RAND_MAX,
                 (float)rand() / RAND_MAX, true);
     Point3f color((float)rand() / RAND_MAX,
                   (float)rand() / RAND_MAX,
                   (float)rand() / RAND_MAX);
     spheres[i] = new Sphere(Point3f(center_x, center_y, center_z), dir  * speed,
-                            radius, color, 0);
+                            radius, color, level_of_detalization);
     center_x += 3 * radius;
     if (center_x + radius >= CornellBox::kRight) {
       center_x = CornellBox::kLeft + 2 * radius;
@@ -73,9 +68,10 @@ int main(int argc, char** argv) {
   }
 
   glutInit(&argc, argv);
-  glutInitWindowSize(display_width, display_height);
+  glutInitWindowSize(kDisplayWidth, kDisplayHeight);
   glutInitWindowPosition(0, 0);
   glutCreateWindow("Single view");
+  glutSpecialFunc(SpecialKeyPressed);
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
   glutDisplayFunc(display);
@@ -90,17 +86,18 @@ int main(int argc, char** argv) {
   for (int i = 0, n = cornell_box_tris.size(); i < n; ++i) {
     delete cornell_box_tris[i];
   }
-  std::cout << "Max. processed triangles: " << max_processed_tris << std::endl;
-  std::cout << "Max. spheres on ray: " << max_spheres_on_ray << std::endl;
-  std::cout << "Nearest proc. sphere: " << nearest_processed_sphere << std::endl;
-  std::cout << "Farest proc. sphere: " << farest_processed_sphere << std::endl;
-  std::cout << "Max. tris from sphere sphere: " << max_tris_from_sphere << std::endl;
-
+  std::cout << "Avg. display time: " << (float)display_time / num_dispay_calls
+            << "ms." << std::endl;
   return 0;
 }
 
 void display() {
-  if (FPS::TimeFrom(last_move) > kMoveDelay) {
+  static const unsigned kMoveDelay = 40;
+
+  static timeval last_move;
+  static uint8_t* canvas = new uint8_t[3 * kDisplayWidth * kDisplayHeight];
+
+  if (TimeFrom(last_move) > kMoveDelay) {
     for (int i = 0, n = spheres.size(); i < n; ++i) {
       spheres[i]->Move(CornellBox::kLeft, CornellBox::kRight,
                        CornellBox::kBottom, CornellBox::kTop,
@@ -112,10 +109,12 @@ void display() {
 
   uint8_t* offset = canvas;
   float rgb[3];
-  for (int y = 0; y < display_height; ++y) {
-    float v = (float(y) / display_height) * 2.0f - 1.0f;
-    for (int x = 0; x < display_width; ++x) {
-      float u = (float(x) / display_width) * 2.0f - 1.0f;
+  timeval start;
+  gettimeofday(&start, 0);
+  for (int y = 0; y < kDisplayHeight; ++y) {
+    float v = (float(y) / kDisplayHeight) * 2.0f - 1.0f;
+    for (int x = 0; x < kDisplayWidth; ++x) {
+      float u = (float(x) / kDisplayWidth) * 2.0f - 1.0f;
 
       Point3f color = Ray(camera_pos,
                           Point3f(Point3f(u, v, 0) - camera_pos, true));
@@ -127,10 +126,9 @@ void display() {
       offset += 3;
     }
   }
-  glDrawPixels(display_width, display_height, GL_RGB, GL_UNSIGNED_BYTE, canvas);
-
-  FPS::Stack();
-  std::cout << "fps: " << FPS::Get() << std::endl;
+  glDrawPixels(kDisplayWidth, kDisplayHeight, GL_RGB, GL_UNSIGNED_BYTE, canvas);
+  display_time += TimeFrom(start);
+  num_dispay_calls += 1;
   glutSwapBuffers();
 }
 
@@ -154,35 +152,14 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
   }
   std::sort(spheres_on_ray.begin(), spheres_on_ray.end(), comparator);
 
-  int processed_tris = 0;
   if (!spheres_on_ray.empty()) {
     // Ray intersects one of spheres.
     for (int i = 0, n = spheres_on_ray.size(); i < n; ++i) {
-      int num_tris_on_sphere = 0;
-
       nearest_tri = spheres_on_ray[i].second->FindIntersection(
-        ray_point, ray_dir, intersection, u, v, max_distance,
-        &num_tris_on_sphere
-      );
-
-      processed_tris += num_tris_on_sphere;
-
-      if (num_tris_on_sphere > max_tris_from_sphere) {
-        max_tris_from_sphere = num_tris_on_sphere;
-      }
-
+        ray_point, ray_dir, intersection, u, v, max_distance);
       if (nearest_tri) {
-        if (i + 1 < nearest_processed_sphere) {
-          nearest_processed_sphere = i + 1;
-        }
-        if (i + 1 > farest_processed_sphere) {
-          farest_processed_sphere = i + 1;
-        }
         break;
       }
-    }
-    if (spheres_on_ray.size() > max_spheres_on_ray) {
-      max_spheres_on_ray = spheres_on_ray.size();
     }
   }
 
@@ -190,7 +167,6 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
     // Ray intersects Cornell box.
     for (int i = 0, n = cornell_box_tris.size(); i < n; ++i) {
       Triangle* tri = cornell_box_tris[i];
-      processed_tris += 1;
       if (tri->IsIntersects(ray_point, ray_dir, intersection, u, v,
                             &distance)) {
         if (distance < max_distance) {
@@ -199,9 +175,6 @@ Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
         }
       }
     }
-  }
-  if (processed_tris > max_processed_tris) {
-    max_processed_tris = processed_tris;
   }
   return nearest_tri;
 }
@@ -221,7 +194,7 @@ Point3f Ray(const Point3f& from, const Point3f& dir, int iter) {
     result_color += tri_color.color * tri_color.ambient;
 
     // Reflected ray.
-    if (tri_color.reflection > 0 && iter + 1 < kMaxIters) {
+    if (tri_color.reflection > 0 && iter + 1 < kMaxRayIters) {
 
       Point3f reflected(dir - normal * 2.0f * Point3f::Dot(normal, dir), true);
       result_color += Ray(Point3f(intersection), reflected, iter + 1) *
@@ -242,4 +215,40 @@ Point3f Ray(const Point3f& from, const Point3f& dir, int iter) {
     }
   }
   return result_color;
+}
+
+void SpecialKeyPressed(int key, int x, int y) {
+  switch (key) {
+    case GLUT_KEY_PAGE_UP:
+      if (level_of_detalization < 5) {
+        level_of_detalization += 1;
+        for (int i = 0, n = spheres.size(); i < n; ++i) {
+          Sphere* sphere = spheres[i];
+          spheres[i] = new Sphere(*sphere, level_of_detalization);
+          delete sphere;
+        }
+        std::cout << "Level of detalization: " << level_of_detalization
+                  << std::endl;
+      }
+      break;
+    case GLUT_KEY_PAGE_DOWN:
+      if (level_of_detalization > 0) {
+        level_of_detalization -= 1;
+        for (int i = 0, n = spheres.size(); i < n; ++i) {
+          Sphere* sphere = spheres[i];
+          spheres[i] = new Sphere(*sphere, level_of_detalization);
+          delete sphere;
+        }
+        std::cout << "Level of detalization: " << level_of_detalization
+                  << std::endl;
+      }
+      break;
+    default: break;
+  }
+}
+
+int TimeFrom(const timeval& t) {
+  timeval now;
+  gettimeofday(&now, 0);
+  return (now.tv_sec - t.tv_sec) * 1e+3 + (now.tv_usec - t.tv_usec) * 1e-3;
 }

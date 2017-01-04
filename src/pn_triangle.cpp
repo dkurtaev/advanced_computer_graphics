@@ -123,7 +123,7 @@ void PNTriangle::Move(const Point3f& delta) {
 
 Triangle* PNTriangle::FindIntersection(
             const Point3f& ray_point, const Point3f& ray, Point3f* intersection,
-            float* u, float* v, float max_distance, int* num_processed_tris) {
+            float* u, float* v, float max_distance) {
   static const float kMinDistance = 1e-2f;
 
   float distance;
@@ -131,7 +131,6 @@ Triangle* PNTriangle::FindIntersection(
     Triangle* tri = tris_[i];
     if (tri->IsIntersects(ray_point, ray, intersection, u, v, &distance)) {
       if (kMinDistance < distance && distance < max_distance) {
-        *num_processed_tris += i + 1;
         return tri;
       }
     }

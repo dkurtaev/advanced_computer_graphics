@@ -8,27 +8,39 @@
 
 Sphere::Sphere(const Point3f& center, const Point3f& direction, float radius,
                const Color& color, int lod)
-    : center_(center), direction_(direction), radius_(radius), pn_tris_(8) {
-  Vertex v1(center + Point3f(radius, 0, 0), Point3f(1, 0, 0));
-  Vertex v2(center + Point3f(0, 0, -radius), Point3f(0, 0, -1));
-  Vertex v3(center + Point3f(-radius, 0, 0), Point3f(-1, 0, 0));
-  Vertex v4(center + Point3f(0, 0, radius), Point3f(0, 0, 1));
-  Vertex v5(center + Point3f(0, radius, 0), Point3f(0, 1, 0));
-  Vertex v6(center + Point3f(0, -radius, 0), Point3f(0, -1, 0));
-
-  pn_tris_[0] = new PNTriangle(v1, v2, v5, color, lod);
-  pn_tris_[1] = new PNTriangle(v2, v3, v5, color, lod);
-  pn_tris_[2] = new PNTriangle(v3, v4, v5, color, lod);
-  pn_tris_[3] = new PNTriangle(v4, v1, v5, color, lod);
-
-  pn_tris_[4] = new PNTriangle(v1, v6, v2, color, lod);
-  pn_tris_[5] = new PNTriangle(v2, v6, v3, color, lod);
-  pn_tris_[6] = new PNTriangle(v3, v6, v4, color, lod);
-  pn_tris_[7] = new PNTriangle(v4, v6, v1, color, lod);
-
-  Point3f bbox_size(2.0f * radius, 2.0f * radius, 2.0f * radius);
-  bbox_ = new BoundingBox(center - bbox_size * 0.5f, bbox_size);
+    : center_(center), direction_(direction), radius_(radius), color_(color) {
+  Init(lod);
 }
+
+Sphere::Sphere(const Sphere& sphere, int lod)
+    : center_(sphere.center_), direction_(sphere.direction_),
+      radius_(sphere.radius_), color_(sphere.color_) {
+  Init(lod);
+}
+
+void Sphere::Init(int lod) {
+  Vertex v1(center_ + Point3f(radius_, 0, 0), Point3f(1, 0, 0));
+  Vertex v2(center_ + Point3f(0, 0, -radius_), Point3f(0, 0, -1));
+  Vertex v3(center_ + Point3f(-radius_, 0, 0), Point3f(-1, 0, 0));
+  Vertex v4(center_ + Point3f(0, 0, radius_), Point3f(0, 0, 1));
+  Vertex v5(center_ + Point3f(0, radius_, 0), Point3f(0, 1, 0));
+  Vertex v6(center_ + Point3f(0, -radius_, 0), Point3f(0, -1, 0));
+
+  pn_tris_.resize(8);
+  pn_tris_[0] = new PNTriangle(v1, v2, v5, color_, lod);
+  pn_tris_[1] = new PNTriangle(v2, v3, v5, color_, lod);
+  pn_tris_[2] = new PNTriangle(v3, v4, v5, color_, lod);
+  pn_tris_[3] = new PNTriangle(v4, v1, v5, color_, lod);
+
+  pn_tris_[4] = new PNTriangle(v1, v6, v2, color_, lod);
+  pn_tris_[5] = new PNTriangle(v2, v6, v3, color_, lod);
+  pn_tris_[6] = new PNTriangle(v3, v6, v4, color_, lod);
+  pn_tris_[7] = new PNTriangle(v4, v6, v1, color_, lod);
+
+  Point3f bbox_size(2.0f * radius_, 2.0f * radius_, 2.0f * radius_);
+  bbox_ = new BoundingBox(center_ - bbox_size * 0.5f, bbox_size);
+}
+
 
 Sphere::~Sphere() {
   for (int i = 0, n = pn_tris_.size(); i < n; ++i) {
@@ -102,8 +114,7 @@ bool comparator(const std::pair<float, PNTriangle*>& first,
 
 Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
                                    Point3f* intersection, float* u, float* v,
-                                   float max_distance,
-                                   int* num_processed_tris) {
+                                   float max_distance) {
   std::vector<std::pair<float, PNTriangle*> > octants_on_ray;
 
   std::pair<float, PNTriangle*> p;
@@ -120,7 +131,7 @@ Triangle* Sphere::FindIntersection(const Point3f& ray_point, const Point3f& ray,
   n_octants = std::min(4, n_octants);
   for (int i = 0; i < n_octants && !nearest_tri; ++i) {
     nearest_tri = octants_on_ray[i].second->FindIntersection(
-      ray_point, ray, intersection, u, v, max_distance, num_processed_tris);
+      ray_point, ray, intersection, u, v, max_distance);
   }
   return nearest_tri;
 }
