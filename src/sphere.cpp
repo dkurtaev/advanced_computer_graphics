@@ -1,5 +1,7 @@
 #include "include/sphere.hpp"
 
+#include <math.h>
+
 #include "include/pn_triangle.hpp"
 
 Sphere::Sphere(const Point3f& center, const Point3f& direction, float radius,
@@ -85,5 +87,17 @@ bool Sphere::IsIntersects(const Sphere& sphere) {
 
 bool Sphere::IsIntersects(const Point3f& ray_point, const Point3f& ray,
                           float* distance) const {
-  return bbox_->IsIntersects(ray_point, ray, distance);
+  float b = Point3f::Dot(ray_point - center_, ray);
+  float c = ray_point.SqDistanceTo(center_) - radius_ * radius_;
+  float determinant = b * b - c;
+  if (determinant >= 0) {
+    if (b < 0 || determinant > 4.0f * b * b) {
+      *distance = sqrt(determinant) - 2.0f * b;
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
 }
