@@ -19,9 +19,9 @@ class Triangle {
 
   void Move(const Point3f& delta);
 
- private:
-  Point3f Project(const Point3f& point, const Point3f& dir) const;
+  void GetCoords(float* dst, int dim);
 
+ private:
   Vertex v1_, v2_, v3_;
   Color color_;
 };

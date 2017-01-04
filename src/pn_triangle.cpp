@@ -1,5 +1,7 @@
 #include "include/pn_triangle.hpp"
 
+#include <vector>
+
 #include "include/point3f.hpp"
 
 void PNTriangle::GetTriangles(std::vector<Triangle*>* scene_triangles,
@@ -40,7 +42,7 @@ void PNTriangle::GetTriangles(std::vector<Triangle*>* scene_triangles,
   Point3f E = 0.5f * (b210 + b120 + b021 + b012 + b102 + b201) * kRatio;
   Point3f b111 = E + 0.5f * (E - (p1 + p2 + p3) * kRatio);
 
-  Vertex** vertices = new Vertex*[num_vertices];
+  std::vector<Vertex*> vertices(num_vertices);
 
   int idx = 0;
   float x = 0;

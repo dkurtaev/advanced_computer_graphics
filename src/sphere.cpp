@@ -2,9 +2,8 @@
 
 #include "include/pn_triangle.hpp"
 
-Sphere::Sphere(std::vector<Triangle*>* scene_triangles, const Point3f& center,
-               const Point3f& direction, float radius, const Color& color,
-               int lod)
+Sphere::Sphere(const Point3f& center, const Point3f& direction, float radius,
+               const Color& color, int lod)
     : center_(center), direction_(direction), radius_(radius) {
   Vertex v1(center + Point3f(radius, 0, 0), Point3f(1, 0, 0));
   Vertex v2(center + Point3f(0, 0, -radius), Point3f(0, 0, -1));
@@ -23,9 +22,15 @@ Sphere::Sphere(std::vector<Triangle*>* scene_triangles, const Point3f& center,
   PNTriangle::GetTriangles(&triangles_, v3, v6, v4, color, lod);
   PNTriangle::GetTriangles(&triangles_, v4, v6, v1, color, lod);
 
-  scene_triangles->reserve(scene_triangles->size() + triangles_.size());
-  scene_triangles->insert(scene_triangles->end(), triangles_.begin(),
-                          triangles_.end());
+  Point3f bbox_size(2.0f * radius, 2.0f * radius, 2.0f * radius);
+  bbox_ = new BoundingBox(center - bbox_size * 0.5f, bbox_size);
+}
+
+Sphere::~Sphere() {
+  for (int i = 0, n = triangles_.size(); i < n; ++i) {
+    delete triangles_[i];
+  }
+  delete bbox_;
 }
 
 void Sphere::Move(float min_x, float max_x, float min_y, float max_y,
@@ -51,4 +56,14 @@ void Sphere::Move(float min_x, float max_x, float min_y, float max_y,
     triangles_[i]->Move(direction_);
   }
   center_ += direction_;
+  *bbox_ += direction_;
+}
+
+bool Sphere::IsIntersects(const Point3f& ray_point, const Point3f& ray) const {
+  return bbox_->IsIntersects(ray_point, ray);
+}
+
+void Sphere::GetTriangles(std::vector<Triangle*>* tris) {
+  tris->reserve(tris->size() + triangles_.size());
+  tris->insert(tris->end(), triangles_.begin(), triangles_.end());
 }

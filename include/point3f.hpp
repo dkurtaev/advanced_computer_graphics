@@ -28,7 +28,7 @@ class Point3f {
 
   Point3f operator *(float val) const;
 
-  void print() {
+  void print() const {
     std::cout << coords_[0] << ' ' << coords_[1] << ' ' << coords_[2] << std::endl;
   }
 
