@@ -18,13 +18,14 @@ void display();
 
 const unsigned kMoveDelay = 40;
 timeval last_move;
-unsigned display_width = 500;
-unsigned display_height = 500;
+unsigned display_width = 300;
+unsigned display_height = 300;
 std::vector<Triangle*> cornell_box_tris;
 Point3f camera_pos(0, 0, 5);
 uint8_t* canvas;
 int max_processing_tris = 0;
-std::vector<Sphere*> spheres(2);
+
+std::vector<Sphere*> spheres(10);
 
 Triangle* FindIntersection(const Point3f& ray_point, const Point3f& ray_dir,
                            Point3f* intersection, float* u, float* v,
@@ -38,10 +39,31 @@ int main(int argc, char** argv) {
   gettimeofday(&last_move, 0);
   canvas = new uint8_t[3 * display_width * display_height];
   CornellBox::GetTriangles(&cornell_box_tris);
-  spheres[0] = new Sphere(Point3f(0.4, 0, -0.7), Point3f(0.1, 0.3, -0.1, true) * 0.05, 0.2,
-                      Point3f(1, 1, 0), 0);
-  spheres[1] = new Sphere(Point3f(0.4, 0, -0.7), Point3f(-0.1, 0.2, -0.1, true) * 0.05, 0.2,
-                      Point3f(1, 0, 1), 0);
+
+  // Setup spheres.
+  float radius = 0.2f, speed = 0.05f;
+  float center_x = CornellBox::kLeft + 2 * radius;
+  float center_y = CornellBox::kBottom + 2 * radius;
+  float center_z = CornellBox::kBack + 2 * radius;
+  for (int i = 0, n = spheres.size(); i < n; ++i) {
+    Point3f dir((float)rand() / RAND_MAX, (float)rand() / RAND_MAX,
+                (float)rand() / RAND_MAX, true);
+    Point3f color((float)rand() / RAND_MAX,
+                  (float)rand() / RAND_MAX,
+                  (float)rand() / RAND_MAX);
+    spheres[i] = new Sphere(Point3f(center_x, center_y, center_z), dir  * speed,
+                            radius, color, 3);
+    center_x += 3 * radius;
+    if (center_x + radius >= CornellBox::kRight) {
+      center_x = CornellBox::kLeft + 2 * radius;
+      center_z += 3 * radius;
+      if (center_z + radius >= CornellBox::kFront) {
+        center_y += 3 * radius;
+        center_x = CornellBox::kLeft + 2 * radius;
+        center_z = CornellBox::kBack + 2 * radius;
+      }
+    }
+  }
 
   glutInit(&argc, argv);
   glutInitWindowSize(display_width, display_height);
@@ -69,7 +91,9 @@ int main(int argc, char** argv) {
 void display() {
   if (FPS::TimeFrom(last_move) > kMoveDelay) {
     for (int i = 0, n = spheres.size(); i < n; ++i) {
-      spheres[i]->Move(-1, 1, -1, 1, -2, 0);
+      spheres[i]->Move(CornellBox::kLeft, CornellBox::kRight,
+                       CornellBox::kBottom, CornellBox::kTop,
+                       CornellBox::kBack, CornellBox::kFront, spheres);
     }
     gettimeofday(&last_move, 0);
   }
@@ -84,6 +108,7 @@ void display() {
 
       Point3f color = Ray(camera_pos,
                           Point3f(Point3f(u, v, 0) - camera_pos, true));
+
       color.GetCoords(rgb);
       offset[0] = 255 * std::min(1.0f, rgb[0]);
       offset[1] = 255 * std::min(1.0f, rgb[1]);

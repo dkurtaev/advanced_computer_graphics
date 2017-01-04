@@ -16,12 +16,14 @@ class Sphere {
   ~Sphere();
 
   void Move(float min_x, float max_x, float min_y, float max_y,
-            float min_z, float max_z);
+            float min_z, float max_z, const std::vector<Sphere*>& spheres);
 
   void GetTriangles(const Point3f& ray_point, const Point3f& ray,
                     std::vector<Triangle*>* tris);
 
  private:
+  bool IsIntersects(const Sphere& sphere);
+
   Point3f center_;
   Point3f direction_;
   float radius_;

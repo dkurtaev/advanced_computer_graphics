@@ -32,10 +32,9 @@ bool BoundingBox::IsIntersects(const Point3f& ray_point,
 
   float min = 0, max = FLT_MAX;
   for (int i = 0; i < 3; ++i) {
-    float left, right;
     if (dir[i] != 0) {
-      left = (origin[i] - point[i]) / dir[i];
-      right = left + size[i] / dir[i];
+      float left = (origin[i] - point[i]) / dir[i];
+      float right = left + size[i] / dir[i];
       if (dir[i] < 0) {
         std::swap(left, right);
       }
